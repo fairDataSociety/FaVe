@@ -48,8 +48,9 @@ func main() {
 	var options Options
 	var parser = flags.NewParser(&options, flags.Default)
 
+	// Parse the command line flags.
+	// If the user asked for help, don't print the error.
 	if _, err := parser.Parse(); err != nil {
-		fmt.Println(err)
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
@@ -57,12 +58,14 @@ func main() {
 		}
 	}
 
+	// Set the log level
 	level := errLevel
 	if options.Verbose {
 		level = debugLevel
 	}
 	logger := logging.New(os.Stdout, level)
 
+	// start spinner
 	s := spinner.New(spinner.CharSets[70], 100*time.Millisecond)
 	s.Start()
 	insertedHook = func(word string) {
@@ -70,9 +73,12 @@ func main() {
 	}
 	defer s.Stop()
 
-	config, _ := contracts.PlayConfig()
+	// Get config for fairos
+	// TODO This will call contracts.TestConfig() eventually
+	config, _ := contracts.TestnetConfig()
 	config.ProviderBackend = options.EnsRPC
 
+	// init fairos
 	var err error
 	api, err = dfs.NewDfsAPI(
 		context.TODO(),
@@ -87,6 +93,8 @@ func main() {
 		return
 	}
 	s.Suffix = "fairOS initialised"
+
+	// login to fairos
 	lr, err := api.LoginUserV2(options.FairOSUser, options.FairOSPassword, "")
 	if err != nil {
 		logger.Errorf("fairos login failed: %s", err.Error())
@@ -127,12 +135,15 @@ func main() {
 		return
 	}
 	s.Suffix = fmt.Sprintf("kv table %s opened", options.KVStore)
-	// get kv batch
+
+	// get kv batch for inserting vectors in batch
 	batch, err := api.KVBatch(sessionId, options.Pod, options.KVStore, []string{})
 	if err != nil {
 		logger.Errorf("failed to create kv batch action: %s\n", err.Error())
 		return
 	}
+
+	// open vectors file
 	file, err := os.Open(options.VectorCSVPath)
 	if err != nil {
 		logger.Errorf("failed to open vectors file: %s\n", err.Error())
@@ -143,6 +154,7 @@ func main() {
 	var vectorLength = -1
 	var count = 0
 
+	// read vectors file line by line and insert in kv store
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		count += 1
