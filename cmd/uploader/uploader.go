@@ -193,6 +193,7 @@ func main() {
 		} else {
 			insertedHook(word)
 		}
+
 	}
 	fmt.Println("number of words ", count)
 }

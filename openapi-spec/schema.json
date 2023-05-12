@@ -1,0 +1,62 @@
+{
+  "basePath": "/",
+  "consumes": [
+    "application/yaml",
+    "application/json"
+  ],
+  "definitions": {
+    "ErrorResponse": {
+      "description": "An error response given by FaVe end-points.",
+      "properties": {
+        "error": {
+          "items": {
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "externalDocs": {
+    "url": "https://github.com/fairDataSociety/FaVe"
+  },
+  "info": {
+    "contact": {
+      "email": "sabyasachi@datafund.io",
+      "name": "fave",
+      "url": "https://github.com/fairDataSociety/FaVe"
+    },
+    "title": "fave",
+    "version": "1.19.0-prealpha"
+  },
+  "parameters": {},
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Home. Discover the REST API",
+        "operationId": "fave.root",
+        "responses": {
+          "200": {
+            "description": "fave is alive and ready to serve content"
+          }
+        }
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0",
+  "tags": [
+    {
+    "description": "Everything about your fave",
+    "name": "fave"
+    }
+  ]
+}
