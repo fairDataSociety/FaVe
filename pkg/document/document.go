@@ -15,7 +15,6 @@ import (
 	"github.com/fairdatasociety/fairOS-dfs/pkg/pod"
 	"github.com/sirupsen/logrus"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
-	ent "github.com/weaviate/weaviate/entities/vectorindex/hnsw"
 )
 
 const (
@@ -29,7 +28,6 @@ const (
 type Config struct {
 	Verbose     bool
 	GlovePodRef string
-	Pod         string
 }
 
 type Client struct {
@@ -71,7 +69,6 @@ func New(config Config, api *dfs.API) (*Client, error) {
 	return &Client{
 		api:     api,
 		logger:  logger,
-		pod:     config.Pod,
 		lookup:  lkup,
 		indices: map[string]h.VectorIndex{},
 	}, nil
@@ -89,10 +86,10 @@ func (c *Client) Login(username, password string) error {
 	return nil
 }
 
-func (c *Client) OpenPod() error {
+func (c *Client) OpenPod(pod string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-
+	c.pod = pod
 	if c.sessionId == "" {
 		return dfs.ErrUserNotLoggedIn
 	}
@@ -161,7 +158,7 @@ func (c *Client) CreateCollection(col *Collection) error {
 		DistanceProvider:      distancer.NewCosineDistanceProvider(),
 		VectorForIDThunk:      vectorForID,
 		ClassName:             col.Name,
-	}, ent.UserConfig{
+	}, h.UserConfig{
 		MaxConnections: 30,
 		EFConstruction: 60,
 	}, kvStore)

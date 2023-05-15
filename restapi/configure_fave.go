@@ -3,9 +3,13 @@
 package restapi
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/fairDataSociety/FaVe/adapters/handlers"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
@@ -21,6 +25,9 @@ func configureFlags(api *operations.FaveAPI) {
 }
 
 func configureAPI(api *operations.FaveAPI) http.Handler {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
+	defer cancel()
 	// configure the api here
 	api.ServeError = errors.ServeError
 
@@ -39,8 +46,13 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
-	h := handlers.Handlers{}
-	api.FaveRootHandler = operations.FaveRootHandlerFunc(h.FaveRootHandler)
+	handlerConfig := handlers.HandlerConfig{}
+	handler, err := handlers.NewHandler(ctx, &handlerConfig)
+	if err != nil {
+		fmt.Println("Error creating handler: ", err)
+		os.Exit(1)
+	}
+	api.FaveRootHandler = operations.FaveRootHandlerFunc(handler.FaveRootHandler)
 
 	api.PreServerShutdown = func() {}
 

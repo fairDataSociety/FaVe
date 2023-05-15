@@ -5,6 +5,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/fairDataSociety/FaVe/pkg/lookup"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/blockstore/bee/mock"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
@@ -13,11 +19,6 @@ import (
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/user"
 	"github.com/sirupsen/logrus"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"testing"
 )
 
 const (
@@ -42,7 +43,6 @@ func TestFave(t *testing.T) {
 	ref := lookupPrep(t, dfsApi)
 	cfg := Config{
 		Verbose:     false,
-		Pod:         "Fave",
 		GlovePodRef: ref,
 	}
 	client, err := New(cfg, dfsApi)
@@ -55,7 +55,7 @@ func TestFave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = client.OpenPod()
+	err = client.OpenPod("Fave")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,6 @@ func lookupPrep(t *testing.T, api *dfs.API) string {
 		t.Fatal(err)
 	}
 	file, err := os.Open("../../tools/dev/en_test-vectors-small.txt")
-	//file, err := os.Open("../../tools/dev/en_test-very-very-very-smaill-vector.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

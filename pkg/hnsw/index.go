@@ -15,8 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
-	"github.com/weaviate/weaviate/adapters/repos/db/helpers"
 	"io"
 	"math"
 	"math/rand"
@@ -25,14 +23,15 @@ import (
 	"time"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
+	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/weaviate/weaviate/adapters/repos/db/helpers"
 	"github.com/weaviate/weaviate/adapters/repos/db/lsmkv"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
-	ssdhelpers "github.com/weaviate/weaviate/adapters/repos/db/vector/ssdhelpers"
+	"github.com/weaviate/weaviate/adapters/repos/db/vector/ssdhelpers"
 	"github.com/weaviate/weaviate/entities/cyclemanager"
 	"github.com/weaviate/weaviate/entities/storobj"
-	ent "github.com/weaviate/weaviate/entities/vectorindex/hnsw"
 )
 
 type hnsw struct {
@@ -204,7 +203,7 @@ type (
 // criterium for the index to see if it has to recover from disk or if its a
 // truly new index. So instead the index is initialized, with un-biased disk
 // checks first and only then is the commit logger created
-func New(cfg Config, uc ent.UserConfig, kvStore *collection.KeyValue) (*hnsw, error) {
+func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid config")
 	}

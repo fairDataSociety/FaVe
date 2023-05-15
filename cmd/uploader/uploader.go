@@ -195,5 +195,10 @@ func main() {
 		}
 
 	}
+	_, err = batch.Write("")
+	if err != nil {
+		logger.Errorf("failed to write kv batch: %s\n", err.Error())
+		return
+	}
 	fmt.Println("number of words ", count)
 }
