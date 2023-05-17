@@ -591,14 +591,15 @@ func (h *hnsw) isEmptyUnsecured() bool {
 func (h *hnsw) nodeByID(id uint64) *vertex {
 	h.RLock()
 	defer h.RUnlock()
-
 	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
 	if err != nil {
+		fmt.Println("nodeByID: could not get node", err)
 		return nil
 	}
 	var v *vertex
 	err = json.Unmarshal(value, &v)
 	if err != nil {
+		fmt.Println("nodeByID: could not Unmarshal node", err)
 		return nil
 	}
 	return v

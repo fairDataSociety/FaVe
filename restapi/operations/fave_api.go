@@ -44,8 +44,17 @@ func NewFaveAPI(spec *loads.Document) *FaveAPI {
 
 		JSONProducer: runtime.JSONProducer(),
 
-		FaveHelloHandler: FaveHelloHandlerFunc(func(params FaveHelloParams) middleware.Responder {
-			return middleware.NotImplemented("operation FaveHello has not yet been implemented")
+		FaveAddDocumentsHandler: FaveAddDocumentsHandlerFunc(func(params FaveAddDocumentsParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveAddDocuments has not yet been implemented")
+		}),
+		FaveCreateCollectionHandler: FaveCreateCollectionHandlerFunc(func(params FaveCreateCollectionParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveCreateCollection has not yet been implemented")
+		}),
+		FaveDeleteCollectionHandler: FaveDeleteCollectionHandlerFunc(func(params FaveDeleteCollectionParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveDeleteCollection has not yet been implemented")
+		}),
+		FaveGetNearestDocumentsHandler: FaveGetNearestDocumentsHandlerFunc(func(params FaveGetNearestDocumentsParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveGetNearestDocuments has not yet been implemented")
 		}),
 		FaveRootHandler: FaveRootHandlerFunc(func(params FaveRootParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveRoot has not yet been implemented")
@@ -89,8 +98,14 @@ type FaveAPI struct {
 	//   - application/json
 	JSONProducer runtime.Producer
 
-	// FaveHelloHandler sets the operation handler for the fave hello operation
-	FaveHelloHandler FaveHelloHandler
+	// FaveAddDocumentsHandler sets the operation handler for the fave add documents operation
+	FaveAddDocumentsHandler FaveAddDocumentsHandler
+	// FaveCreateCollectionHandler sets the operation handler for the fave create collection operation
+	FaveCreateCollectionHandler FaveCreateCollectionHandler
+	// FaveDeleteCollectionHandler sets the operation handler for the fave delete collection operation
+	FaveDeleteCollectionHandler FaveDeleteCollectionHandler
+	// FaveGetNearestDocumentsHandler sets the operation handler for the fave get nearest documents operation
+	FaveGetNearestDocumentsHandler FaveGetNearestDocumentsHandler
 	// FaveRootHandler sets the operation handler for the fave root operation
 	FaveRootHandler FaveRootHandler
 
@@ -173,8 +188,17 @@ func (o *FaveAPI) Validate() error {
 		unregistered = append(unregistered, "JSONProducer")
 	}
 
-	if o.FaveHelloHandler == nil {
-		unregistered = append(unregistered, "FaveHelloHandler")
+	if o.FaveAddDocumentsHandler == nil {
+		unregistered = append(unregistered, "FaveAddDocumentsHandler")
+	}
+	if o.FaveCreateCollectionHandler == nil {
+		unregistered = append(unregistered, "FaveCreateCollectionHandler")
+	}
+	if o.FaveDeleteCollectionHandler == nil {
+		unregistered = append(unregistered, "FaveDeleteCollectionHandler")
+	}
+	if o.FaveGetNearestDocumentsHandler == nil {
+		unregistered = append(unregistered, "FaveGetNearestDocumentsHandler")
 	}
 	if o.FaveRootHandler == nil {
 		unregistered = append(unregistered, "FaveRootHandler")
@@ -269,10 +293,22 @@ func (o *FaveAPI) initHandlerCache() {
 		o.handlers = make(map[string]map[string]http.Handler)
 	}
 
-	if o.handlers["GET"] == nil {
-		o.handlers["GET"] = make(map[string]http.Handler)
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/hello"] = NewFaveHello(o.context, o.FaveHelloHandler)
+	o.handlers["POST"]["/documents"] = NewFaveAddDocuments(o.context, o.FaveAddDocumentsHandler)
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/collections"] = NewFaveCreateCollection(o.context, o.FaveCreateCollectionHandler)
+	if o.handlers["DELETE"] == nil {
+		o.handlers["DELETE"] = make(map[string]http.Handler)
+	}
+	o.handlers["DELETE"]["/collections/{collection}"] = NewFaveDeleteCollection(o.context, o.FaveDeleteCollectionHandler)
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/nearest-documents"] = NewFaveGetNearestDocuments(o.context, o.FaveGetNearestDocumentsHandler)
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}

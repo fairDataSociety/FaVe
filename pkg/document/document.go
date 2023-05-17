@@ -117,12 +117,10 @@ func (c *Client) CreateCollection(col *Collection) error {
 		return dfs.ErrPodNotOpen
 	}
 	col.Indexes[hnswIndexName] = collection.NumberIndex
-	//col.Indexes["vector"] = collection.VectorIndex
 	err := c.api.DocCreate(c.sessionId, c.pod, col.Name, col.Indexes, true)
 	if err != nil {
 		return err
 	}
-
 	vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
 		expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
 		docs, err := c.api.DocFind(c.sessionId, c.pod, col.Name, expr, 1)
@@ -135,8 +133,7 @@ func (c *Client) CreateCollection(col *Collection) error {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("====vectorForID ", id, data)
-		return data["vector"].([]float32), nil
+		return convertToFloat32Slice(data["vector"])
 	}
 	kvStore := c.podInfo.GetKVStore()
 
@@ -144,12 +141,10 @@ func (c *Client) CreateCollection(col *Collection) error {
 	if err != nil && err != collection.ErrKvTableAlreadyPresent {
 		return err
 	}
-
 	err = kvStore.OpenKVTable(col.Name, c.podInfo.GetPodPassword())
 	if err != nil {
 		return err
 	}
-
 	makeCL := h.MakeNoopCommitLogger
 	index, err := h.New(h.Config{
 		RootPath:              "not-used",
@@ -172,11 +167,97 @@ func (c *Client) CreateCollection(col *Collection) error {
 	return c.api.DocOpen(c.sessionId, c.pod, col.Name)
 }
 
+func (c *Client) DeleteCollection(collection string) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.sessionId == "" {
+		return dfs.ErrUserNotLoggedIn
+	}
+	if c.podInfo == nil {
+		return dfs.ErrPodNotOpen
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		err := c.api.DocDelete(c.sessionId, c.pod, collection)
+		if err != nil {
+			c.logger.Errorf("delete collection failed :%s\n", err.Error())
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		kvStore := c.podInfo.GetKVStore()
+
+		err := kvStore.DeleteKVTable(collection, c.podInfo.GetPodPassword())
+		if err != nil {
+			c.logger.Errorf("delete kv table failed :%s\n", err.Error())
+		}
+	}()
+	wg.Wait()
+	c.hnswLock.Lock()
+	delete(c.indices, collection)
+	c.hnswLock.Unlock()
+	return nil
+}
+
 func (c *Client) AddDocuments(collection string, documents ...*Document) error {
-	batch, err := c.api.DocBatch(c.sessionId, c.pod, collection)
+	// check if kv and doc table is open or not
+	kvStore := c.podInfo.GetKVStore()
+	_, err := kvStore.KVCount(collection)
+	if err != nil {
+		err = kvStore.OpenKVTable(collection, c.podInfo.GetPodPassword())
+		if err != nil {
+			return err
+		}
+	}
+	docIsOpen, err := c.api.DocIsOpen(c.sessionId, c.pod, collection)
 	if err != nil {
 		return err
 	}
+	if !docIsOpen {
+		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
+			if err != nil {
+				return nil, err
+			}
+			doc := docs[0]
+			data := map[string]interface{}{}
+			err = json.Unmarshal(doc, &data)
+			if err != nil {
+				return nil, err
+			}
+			return convertToFloat32Slice(data["vector"])
+		}
+
+		makeCL := h.MakeNoopCommitLogger
+		index, err := h.New(h.Config{
+			RootPath:              "not-used",
+			ID:                    "not-used",
+			MakeCommitLoggerThunk: makeCL,
+			DistanceProvider:      distancer.NewCosineDistanceProvider(),
+			VectorForIDThunk:      vectorForID,
+			ClassName:             collection,
+		}, h.UserConfig{
+			MaxConnections: 30,
+			EFConstruction: 60,
+		}, kvStore)
+		if err != nil {
+			return err
+		}
+
+		c.hnswLock.Lock()
+		c.indices[collection] = index
+		c.hnswLock.Unlock()
+		err = c.api.DocOpen(c.sessionId, c.pod, collection)
+		if err != nil {
+			return err
+		}
+	}
+
 	c.hnswLock.Lock()
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
@@ -192,7 +273,6 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			c.logger.Errorf("corpi failed :%s\n", err.Error())
 			continue
 		}
-		fmt.Println("====AddDocuments vector ", vector.ToArray())
 		doc.Properties["vector"] = vector.ToArray()
 
 		doc.Properties[hnswIndexName] = id
@@ -202,27 +282,79 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
-		err = c.api.DocBatchPut(c.sessionId, c.pod, data, batch)
+		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
-			c.logger.Errorf("DocBatchPut failed :%s\n", err.Error())
+			c.logger.Errorf("DocPut failed :%s\n", err.Error())
 			return err
 		}
+
 		err = index.Add(uint64(id), vector.ToArray())
 		if err != nil {
 			c.logger.Errorf("index.Add failed :%s\n", err.Error())
-			return err
+			continue
 		}
 	}
-	c.logger.Infof("batch write %d documents\n", len(documents))
-	return c.api.DocBatchWrite(c.sessionId, c.pod, batch)
+	return nil
 }
 
-func (c *Client) GetNearDocuments(text, collection string, distance float32) ([][]byte, error) {
+func (c *Client) GetNearDocuments(collection, text string, distance float32) ([][]byte, error) {
+	kvStore := c.podInfo.GetKVStore()
+	_, err := kvStore.KVCount(collection)
+	if err != nil {
+		err = kvStore.OpenKVTable(collection, c.podInfo.GetPodPassword())
+		if err != nil {
+			return nil, err
+		}
+	}
+	docIsOpen, err := c.api.DocIsOpen(c.sessionId, c.pod, collection)
+	if err != nil {
+		return nil, err
+	}
+	if !docIsOpen {
+		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
+			if err != nil {
+				return nil, err
+			}
+			doc := docs[0]
+			data := map[string]interface{}{}
+			err = json.Unmarshal(doc, &data)
+			if err != nil {
+				return nil, err
+			}
+			return convertToFloat32Slice(data["vector"])
+		}
+
+		makeCL := h.MakeNoopCommitLogger
+		index, err := h.New(h.Config{
+			RootPath:              "not-used",
+			ID:                    "not-used",
+			MakeCommitLoggerThunk: makeCL,
+			DistanceProvider:      distancer.NewCosineDistanceProvider(),
+			VectorForIDThunk:      vectorForID,
+			ClassName:             collection,
+		}, h.UserConfig{
+			MaxConnections: 30,
+			EFConstruction: 60,
+		}, kvStore)
+		if err != nil {
+			return nil, err
+		}
+
+		c.hnswLock.Lock()
+		c.indices[collection] = index
+		c.hnswLock.Unlock()
+		err = c.api.DocOpen(c.sessionId, c.pod, collection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	vector, err := c.lookup.Corpi([]string{text})
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("====GetNearDocuments , vector:", vector.ToArray())
 	c.hnswLock.Lock()
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
@@ -230,7 +362,6 @@ func (c *Client) GetNearDocuments(text, collection string, distance float32) ([]
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("====GetNearDocuments , ids:", ids)
 	documents := make([][]byte, len(ids))
 	for i, id := range ids {
 		expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
@@ -238,8 +369,28 @@ func (c *Client) GetNearDocuments(text, collection string, distance float32) ([]
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("====GetNearDocuments , docs:", string(docs[0]))
 		documents[i] = docs[0]
 	}
 	return documents, nil
+}
+func convertToFloat32Slice(i interface{}) ([]float32, error) {
+	// Check if the underlying value is a slice
+	if slice, ok := i.([]interface{}); ok {
+		// Create a new slice to store the converted values
+		result := make([]float32, len(slice))
+
+		// Convert each element to float32
+		for i, v := range slice {
+			// Perform a type assertion to ensure the underlying value is float32
+			if f, ok := v.(float64); ok {
+				result[i] = float32(f)
+			} else {
+				return nil, fmt.Errorf("value at index %d is not float32", i)
+			}
+		}
+
+		return result, nil
+	}
+
+	return nil, fmt.Errorf("value is not a slice")
 }

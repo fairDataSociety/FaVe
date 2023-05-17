@@ -11,15 +11,15 @@ import (
 	golangswaggerpaths "path"
 )
 
-// FaveRootURL generates an URL for the fave root operation
-type FaveRootURL struct {
+// FaveAddDocumentsURL generates an URL for the fave add documents operation
+type FaveAddDocumentsURL struct {
 	_basePath string
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
 // base path specified in the swagger spec.
 // When the value of the base path is an empty string
-func (o *FaveRootURL) WithBasePath(bp string) *FaveRootURL {
+func (o *FaveAddDocumentsURL) WithBasePath(bp string) *FaveAddDocumentsURL {
 	o.SetBasePath(bp)
 	return o
 }
@@ -27,15 +27,15 @@ func (o *FaveRootURL) WithBasePath(bp string) *FaveRootURL {
 // SetBasePath sets the base path for this url builder, only required when it's different from the
 // base path specified in the swagger spec.
 // When the value of the base path is an empty string
-func (o *FaveRootURL) SetBasePath(bp string) {
+func (o *FaveAddDocumentsURL) SetBasePath(bp string) {
 	o._basePath = bp
 }
 
 // Build a url path and query string
-func (o *FaveRootURL) Build() (*url.URL, error) {
+func (o *FaveAddDocumentsURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/"
+	var _path = "/documents"
 
 	_basePath := o._basePath
 	if _basePath == "" {
@@ -47,7 +47,7 @@ func (o *FaveRootURL) Build() (*url.URL, error) {
 }
 
 // Must is a helper function to panic when the url builder returns an error
-func (o *FaveRootURL) Must(u *url.URL, err error) *url.URL {
+func (o *FaveAddDocumentsURL) Must(u *url.URL, err error) *url.URL {
 	if err != nil {
 		panic(err)
 	}
@@ -58,17 +58,17 @@ func (o *FaveRootURL) Must(u *url.URL, err error) *url.URL {
 }
 
 // String returns the string representation of the path with query string
-func (o *FaveRootURL) String() string {
+func (o *FaveAddDocumentsURL) String() string {
 	return o.Must(o.Build()).String()
 }
 
 // BuildFull builds a full url with scheme, host, path and query string
-func (o *FaveRootURL) BuildFull(scheme, host string) (*url.URL, error) {
+func (o *FaveAddDocumentsURL) BuildFull(scheme, host string) (*url.URL, error) {
 	if scheme == "" {
-		return nil, errors.New("scheme is required for a full url on FaveRootURL")
+		return nil, errors.New("scheme is required for a full url on FaveAddDocumentsURL")
 	}
 	if host == "" {
-		return nil, errors.New("host is required for a full url on FaveRootURL")
+		return nil, errors.New("host is required for a full url on FaveAddDocumentsURL")
 	}
 
 	base, err := o.Build()
@@ -82,6 +82,6 @@ func (o *FaveRootURL) BuildFull(scheme, host string) (*url.URL, error) {
 }
 
 // StringFull returns the string representation of a complete url
-func (o *FaveRootURL) StringFull(scheme, host string) string {
+func (o *FaveAddDocumentsURL) StringFull(scheme, host string) string {
 	return o.Must(o.BuildFull(scheme, host)).String()
 }

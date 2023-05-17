@@ -72,10 +72,8 @@ func (lookup *Lookup) Corpi(corpi []string) (*Vector, error) {
 		corpusVectors []Vector
 		err           error
 	)
-	fmt.Println("====== corpi", corpi)
 	for i, corpus := range corpi {
 		parts := split(corpus)
-		fmt.Println("====== parts", parts)
 		if len(parts) == 0 {
 			continue
 		}
@@ -84,8 +82,6 @@ func (lookup *Lookup) Corpi(corpi []string) (*Vector, error) {
 		if err != nil {
 			return nil, fmt.Errorf("at corpus %d: %v", i, err)
 		}
-
-		fmt.Println("====== corpusVectors", corpusVectors)
 	}
 	if len(corpusVectors) == 0 {
 		return nil, fmt.Errorf("no vectors found for corpus")
@@ -106,7 +102,7 @@ func (lookup *Lookup) getVectorForWord(word string) (*Vector, error) {
 	_, b, err := lookup.store.KVGet(lookup.storeName, word)
 	if err != nil {
 		// TODO add logger
-		fmt.Println("====== err", err)
+		fmt.Println("lookup failed", err)
 		return nil, nil
 	}
 
@@ -131,8 +127,8 @@ func (lookup *Lookup) vectors(words []string) ([]Vector, error) {
 				// check.
 				// Note that n goes all the way down to zero, so once we didn't find
 				// any compound words, we're checking the individual word.
+				// TODO: check if this can be done concurrently
 				compound := compound(nextWords(words, wordPos, additionalWords)...)
-				fmt.Println("====== compound", compound)
 				vector, err := lookup.getVectorForWord(compound)
 				if err != nil {
 					return nil, err

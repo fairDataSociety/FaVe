@@ -54,6 +54,10 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 	}
 	api.FaveRootHandler = operations.FaveRootHandlerFunc(handler.FaveRootHandler)
 
+	api.FaveCreateCollectionHandler = operations.FaveCreateCollectionHandlerFunc(handler.FaveCreateCollectionHandler)
+	api.FaveDeleteCollectionHandler = operations.FaveDeleteCollectionHandlerFunc(handler.FaveDeleteCollectionHandler)
+	api.FaveAddDocumentsHandler = operations.FaveAddDocumentsHandlerFunc(handler.FaveAddDocumentsHandler)
+	api.FaveGetNearestDocumentsHandler = operations.FaveGetNearestDocumentsHandlerFunc(handler.FaveGetNearestDocumentsHandler)
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}

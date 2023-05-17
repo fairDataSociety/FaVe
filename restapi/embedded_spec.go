@@ -35,7 +35,7 @@ func init() {
     },
     "version": "1.19.0-prealpha"
   },
-  "basePath": "/",
+  "basePath": "/v1",
   "paths": {
     "/": {
       "get": {
@@ -48,19 +48,245 @@ func init() {
         }
       }
     },
-    "/hello": {
-      "get": {
-        "description": "hello. Discover the REST API",
-        "operationId": "fave.hello",
+    "/collections": {
+      "post": {
+        "description": "Create a new collection.",
+        "operationId": "fave.createCollection",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Collection"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "fave is alive and says hello"
+            "description": "collection added"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collection}": {
+      "delete": {
+        "description": "Delete a collection.",
+        "operationId": "fave.deleteCollection",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Collection name",
+            "name": "collection",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection removed"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "description": "Add documents into a collection.",
+        "operationId": "fave.addDocuments",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/nearest-documents": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocuments",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         }
       }
     }
   },
   "definitions": {
+    "AddDocumentsRequest": {
+      "description": "Add the documents to the collection.",
+      "type": "object",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "Collection": {
+      "type": "object",
+      "properties": {
+        "indexes": {
+          "description": "The indexes of the collection.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "Document": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "ID of the Object.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "properties": {
+          "$ref": "#/definitions/PropertySchema"
+        }
+      }
+    },
     "ErrorResponse": {
       "description": "An error response given by FaVe end-points.",
       "type": "object",
@@ -77,6 +303,45 @@ func init() {
           }
         }
       }
+    },
+    "NearestDocumentsRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "text": {
+          "description": "The text to search for.",
+          "type": "string"
+        }
+      }
+    },
+    "NearestDocumentsResponse": {
+      "description": "Response for the Nearest documents request",
+      "type": "object",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "PropertySchema": {
+      "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
+      "type": "object"
     }
   },
   "tags": [
@@ -107,7 +372,7 @@ func init() {
     },
     "version": "1.19.0-prealpha"
   },
-  "basePath": "/",
+  "basePath": "/v1",
   "paths": {
     "/": {
       "get": {
@@ -120,19 +385,245 @@ func init() {
         }
       }
     },
-    "/hello": {
-      "get": {
-        "description": "hello. Discover the REST API",
-        "operationId": "fave.hello",
+    "/collections": {
+      "post": {
+        "description": "Create a new collection.",
+        "operationId": "fave.createCollection",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Collection"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "fave is alive and says hello"
+            "description": "collection added"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collection}": {
+      "delete": {
+        "description": "Delete a collection.",
+        "operationId": "fave.deleteCollection",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Collection name",
+            "name": "collection",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection removed"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "description": "Add documents into a collection.",
+        "operationId": "fave.addDocuments",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added"
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/nearest-documents": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocuments",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         }
       }
     }
   },
   "definitions": {
+    "AddDocumentsRequest": {
+      "description": "Add the documents to the collection.",
+      "type": "object",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "Collection": {
+      "type": "object",
+      "properties": {
+        "indexes": {
+          "description": "The indexes of the collection.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "Document": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "ID of the Object.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "properties": {
+          "$ref": "#/definitions/PropertySchema"
+        }
+      }
+    },
     "ErrorResponse": {
       "description": "An error response given by FaVe end-points.",
       "type": "object",
@@ -152,6 +643,45 @@ func init() {
           "type": "string"
         }
       }
+    },
+    "NearestDocumentsRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "text": {
+          "description": "The text to search for.",
+          "type": "string"
+        }
+      }
+    },
+    "NearestDocumentsResponse": {
+      "description": "Response for the Nearest documents request",
+      "type": "object",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "PropertySchema": {
+      "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
+      "type": "object"
     }
   },
   "tags": [

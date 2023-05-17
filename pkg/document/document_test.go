@@ -114,7 +114,7 @@ func TestFave(t *testing.T) {
 	}
 
 	// Test search
-	docs, err := client.GetNearDocuments("atmosphere", col.Name, .1)
+	docs, err := client.GetNearDocuments(col.Name, "atmosphere", .1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,10 +189,15 @@ func lookupPrep(t *testing.T, api *dfs.API) string {
 			t.Fatal(err)
 		}
 
-		err = batch.Put(word, buf.Bytes(), true, false)
+		err = batch.Put(word, buf.Bytes(), true, true)
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	_, err = batch.Write("")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	ref, err := api.PodShare(pod, "", sessionId)

@@ -187,7 +187,7 @@ func main() {
 			logger.Errorf("failed to encode vector: %s\n", err.Error())
 			return
 		}
-		err = batch.Put(word, buf.Bytes(), true, false)
+		err = batch.Put(word, buf.Bytes(), true, true)
 		if err != nil {
 			logger.Errorf("could not put value for %s: %s\n", word, err.Error())
 		} else {

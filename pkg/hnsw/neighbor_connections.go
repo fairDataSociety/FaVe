@@ -71,8 +71,8 @@ func (n *neighborFinderConnector) Do() error {
 	if err != nil {
 		return errors.Wrapf(err, "marshal node %d", n.node.Id)
 	}
-	n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
-	return nil
+
+	return n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
 }
 
 func (n *neighborFinderConnector) doAtLevel(level int) error {

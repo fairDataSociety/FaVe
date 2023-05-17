@@ -10,6 +10,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/sirupsen/logrus"
 	"os"
+	"time"
 )
 
 type Handler struct {
@@ -65,5 +66,6 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 }
 
 func (s *Handler) FaveRootHandler(_ operations.FaveRootParams) middleware.Responder {
+	<-time.After(1 * time.Minute)
 	return operations.NewFaveRootOK()
 }
