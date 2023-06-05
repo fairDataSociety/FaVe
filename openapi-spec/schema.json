@@ -5,6 +5,15 @@
     "application/json"
   ],
   "definitions": {
+    "OKResponse": {
+      "description": "An ok response given by FaVe end-points.",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ErrorResponse": {
       "description": "An error response given by FaVe end-points.",
       "properties": {
@@ -146,7 +155,10 @@
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -193,7 +205,10 @@
         ],
         "responses": {
           "200": {
-            "description": "collection removed"
+            "description": "collection removed",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -241,7 +256,10 @@
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",

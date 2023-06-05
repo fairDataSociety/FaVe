@@ -15,6 +15,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 	if collectionRaw.Indexes == nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection should have at least one index"))
 	}
+
 	indexesRaw, ok := collectionRaw.Indexes.(map[string]interface{})
 	if !ok {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong indexes format"))
@@ -36,7 +37,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 		}
 	}
 	col := &document.Collection{
-		Name:    "Question",
+		Name:    collectionRaw.Name,
 		Indexes: indexes,
 	}
 
@@ -45,7 +46,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Failed to create collection"))
 	}
 	// TODO: return success string
-	return operations.NewFaveCreateCollectionOK()
+	return operations.NewFaveCreateCollectionOK().WithPayload(createOKResponseObject("Collection created"))
 }
 
 func (s *Handler) FaveDeleteCollectionHandler(request operations.FaveDeleteCollectionParams) middleware.Responder {
@@ -53,5 +54,5 @@ func (s *Handler) FaveDeleteCollectionHandler(request operations.FaveDeleteColle
 	if err != nil {
 		return operations.NewFaveDeleteCollectionBadRequest().WithPayload(createErrorResponseObject("Failed to delete collection"))
 	}
-	return operations.NewFaveDeleteCollectionOK()
+	return operations.NewFaveDeleteCollectionOK().WithPayload(createOKResponseObject("Collection deleted"))
 }

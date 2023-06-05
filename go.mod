@@ -5,13 +5,14 @@ go 1.20
 require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/fairdatasociety/fairOS-dfs v0.9.3-rc1.0.20230414042231-2a57fd61fe26
+	github.com/fairdatasociety/fairOS-dfs v0.9.5-0.20230602113836-415d99dda02c
 	github.com/go-openapi/errors v0.20.3
 	github.com/go-openapi/loads v0.21.1
 	github.com/go-openapi/runtime v0.24.2
 	github.com/go-openapi/spec v0.20.7
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/go-openapi/swag v0.22.3
+	github.com/go-openapi/validate v0.21.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
@@ -44,7 +45,6 @@ require (
 	github.com/go-openapi/analysis v0.21.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
-	github.com/go-openapi/validate v0.21.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
@@ -81,6 +81,7 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect

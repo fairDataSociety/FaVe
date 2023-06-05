@@ -36,7 +36,7 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 	if err != nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to create add documents"))
 	}
-	return operations.NewFaveAddDocumentsOK()
+	return operations.NewFaveAddDocumentsOK().WithPayload(createOKResponseObject(fmt.Sprintf("Added %d documents", len(documents))))
 }
 
 func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNearestDocumentsParams) middleware.Responder {

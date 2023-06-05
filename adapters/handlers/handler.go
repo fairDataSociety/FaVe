@@ -34,7 +34,7 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 		Verbose:     config.Verbose,
 		GlovePodRef: config.GlovePodRef,
 	}
-	ensConf, _ := contracts.TestnetConfig()
+	ensConf, _ := contracts.TestnetConfig(contracts.Goerli)
 	ensConf.ProviderBackend = config.RPCEndpoint
 	level := logrus.ErrorLevel
 	if config.Verbose {
@@ -42,7 +42,16 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 	}
 	logger := logging.New(os.Stdout, level)
 
-	dfsApi, err := dfs.NewDfsAPI(ctx, config.BeeAPI, config.StampId, ensConf, nil, logger)
+	dfsOpts := &dfs.Options{
+		BeeApiEndpoint:     config.BeeAPI,
+		Stamp:              config.StampId,
+		EnsConfig:          ensConf,
+		SubscriptionConfig: nil,
+		Logger:             logger,
+		FeedTracker:        true,
+	}
+
+	dfsApi, err := dfs.NewDfsAPI(ctx, dfsOpts)
 	if err != nil {
 		return nil, err
 	}

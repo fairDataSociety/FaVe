@@ -22,6 +22,11 @@ FaveAddDocumentsOK collection added
 swagger:response faveAddDocumentsOK
 */
 type FaveAddDocumentsOK struct {
+
+	/*
+	  In: Body
+	*/
+	Payload *models.OKResponse `json:"body,omitempty"`
 }
 
 // NewFaveAddDocumentsOK creates FaveAddDocumentsOK with default headers values
@@ -30,12 +35,27 @@ func NewFaveAddDocumentsOK() *FaveAddDocumentsOK {
 	return &FaveAddDocumentsOK{}
 }
 
+// WithPayload adds the payload to the fave add documents o k response
+func (o *FaveAddDocumentsOK) WithPayload(payload *models.OKResponse) *FaveAddDocumentsOK {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the fave add documents o k response
+func (o *FaveAddDocumentsOK) SetPayload(payload *models.OKResponse) {
+	o.Payload = payload
+}
+
 // WriteResponse to the client
 func (o *FaveAddDocumentsOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
-
 	rw.WriteHeader(200)
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
+	}
 }
 
 // FaveAddDocumentsBadRequestCode is the HTTP code returned for type FaveAddDocumentsBadRequest

@@ -22,6 +22,11 @@ FaveCreateCollectionOK collection added
 swagger:response faveCreateCollectionOK
 */
 type FaveCreateCollectionOK struct {
+
+	/*
+	  In: Body
+	*/
+	Payload *models.OKResponse `json:"body,omitempty"`
 }
 
 // NewFaveCreateCollectionOK creates FaveCreateCollectionOK with default headers values
@@ -30,12 +35,27 @@ func NewFaveCreateCollectionOK() *FaveCreateCollectionOK {
 	return &FaveCreateCollectionOK{}
 }
 
+// WithPayload adds the payload to the fave create collection o k response
+func (o *FaveCreateCollectionOK) WithPayload(payload *models.OKResponse) *FaveCreateCollectionOK {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the fave create collection o k response
+func (o *FaveCreateCollectionOK) SetPayload(payload *models.OKResponse) {
+	o.Payload = payload
+}
+
 // WriteResponse to the client
 func (o *FaveCreateCollectionOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
-
 	rw.WriteHeader(200)
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
+	}
 }
 
 // FaveCreateCollectionBadRequestCode is the HTTP code returned for type FaveCreateCollectionBadRequest

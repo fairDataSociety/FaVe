@@ -589,8 +589,6 @@ func (h *hnsw) isEmptyUnsecured() bool {
 }
 
 func (h *hnsw) nodeByID(id uint64) *vertex {
-	h.RLock()
-	defer h.RUnlock()
 	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
 	if err != nil {
 		fmt.Println("nodeByID: could not get node", err)

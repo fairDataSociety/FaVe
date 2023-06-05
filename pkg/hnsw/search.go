@@ -15,6 +15,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 	"sync/atomic"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
@@ -188,6 +189,7 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 		return nil, errors.Wrapf(err, "calculate distance of current last result")
 	}
 
+	wg := sync.WaitGroup{}
 	for candidates.Len() > 0 {
 		var dist float32
 		var ok bool
@@ -208,107 +210,115 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 			break
 		}
 		candidate := candidates.Pop()
-		h.RLock()
-		candidateNode := h.nodeByID(candidate.ID)
-		h.RUnlock()
-		if candidateNode == nil {
-			// could have been a node that already had a tombstone attached and was
-			// just cleaned up while we were waiting for a read lock
-			continue
-		}
-		candidateNode.Lock()
-		if candidateNode.Level < level {
-			// a node Level could have been downgraded as part of a delete-reassign,
-			// but the Connections pointing to it not yet cleaned up. In this case
-			// the node doesn't have any outgoing Connections at this Level and we
-			// must discard it.
-			candidateNode.Unlock()
-			continue
-		}
-		var connections *[]uint64
-
-		if len(candidateNode.Connections[level]) > h.maximumConnectionsLayerZero {
-			// How is it possible that we could ever have more Connections than the
-			// allowed maximum? It is not anymore, but there was a bug that allowed
-			// this to happen in versions prior to v1.12.0:
-			// https://github.com/weaviate/weaviate/issues/1868
-			//
-			// As a result the length of this slice is entirely unpredictable and we
-			// can no longer retrieve it from the pool. Instead we need to fallback
-			// to allocating a new slice.
-			//
-			// This was discovered as part of
-			// https://github.com/weaviate/weaviate/issues/1897
-			c := make([]uint64, 10)
-			connections = &c
-		} else {
-			connections = h.pools.connList.Get(10)
-			defer h.pools.connList.Put(connections)
-		}
-		copy(*connections, candidateNode.Connections[level])
-		candidateNode.Unlock()
-		for _, neighborID := range *connections {
-
-			if ok := visited.Visited(neighborID); ok {
-				// skip if we've already visited this neighbor
-				continue
+		wg.Add(1)
+		go func(candidate priorityqueue.Item) {
+			defer wg.Done()
+			candidateNode := h.nodeByID(candidate.ID)
+			if candidateNode == nil {
+				// could have been a node that already had a tombstone attached and was
+				// just cleaned up while we were waiting for a read lock
+				return
 			}
+			candidateNode.Lock()
+			if candidateNode.Level < level {
+				// a node Level could have been downgraded as part of a delete-reassign,
+				// but the Connections pointing to it not yet cleaned up. In this case
+				// the node doesn't have any outgoing Connections at this Level and we
+				// must discard it.
+				candidateNode.Unlock()
+				return
+			}
+			var connections *[]uint64
 
-			// make sure we never visit this neighbor again
-			visited.Visit(neighborID)
-			var distance float32
-			var ok bool
-			var err error
-			if h.compressed.Load() {
-				distance, ok, err = h.distanceToByteNode(byteDistancer, neighborID)
+			if len(candidateNode.Connections[level]) > h.maximumConnectionsLayerZero {
+				// How is it possible that we could ever have more Connections than the
+				// allowed maximum? It is not anymore, but there was a bug that allowed
+				// this to happen in versions prior to v1.12.0:
+				// https://github.com/weaviate/weaviate/issues/1868
+				//
+				// As a result the length of this slice is entirely unpredictable and we
+				// can no longer retrieve it from the pool. Instead we need to fallback
+				// to allocating a new slice.
+				//
+				// This was discovered as part of
+				// https://github.com/weaviate/weaviate/issues/1897
+				c := make([]uint64, 10)
+				connections = &c
 			} else {
-				distance, ok, err = h.distanceToFloatNode(floatDistancer, neighborID)
+				connections = h.pools.connList.Get(10)
+				defer h.pools.connList.Put(connections)
 			}
-			if err != nil {
-				return nil, errors.Wrap(err, "calculate distance between candidate and query")
-			}
-
-			if !ok {
-				// node was deleted in the underlying object store
-				continue
-			}
-
-			if distance < worstResultDistance || results.Len() < ef {
-				candidates.Insert(neighborID, distance)
-				if level == 0 && allowList != nil {
-					// we are on the lowest Level containing the actual candidates and we
-					// have an allow list (i.e. the user has probably set some sort of a
-					// filter restricting this search further. As a result we have to
-					// ignore items not on the list
-					if !allowList.Contains(neighborID) {
-						continue
+			copy(*connections, candidateNode.Connections[level])
+			candidateNode.Unlock()
+			connectionWg := sync.WaitGroup{}
+			for _, neighborID := range *connections {
+				connectionWg.Add(1)
+				go func(neighborID uint64) {
+					defer connectionWg.Done()
+					if ok := visited.Visited(neighborID); ok {
+						// skip if we've already visited this neighbor
+						return
 					}
-				}
 
-				if h.hasTombstone(neighborID) {
-					continue
-				}
+					// make sure we never visit this neighbor again
+					visited.Visit(neighborID)
+					var distance float32
+					var ok bool
+					var err error
+					if h.compressed.Load() {
+						distance, ok, err = h.distanceToByteNode(byteDistancer, neighborID)
+					} else {
+						distance, ok, err = h.distanceToFloatNode(floatDistancer, neighborID)
+					}
+					if err != nil {
+						h.logger.Errorf("calculate distance between candidate and query: %v", err)
+						return
+					}
 
-				results.Insert(neighborID, distance)
+					if !ok {
+						// node was deleted in the underlying object store
+						return
+					}
 
-				if h.compressed.Load() {
-					h.compressedVectorsCache.prefetch(candidates.Top().ID)
-				} else {
-					h.cache.prefetch(candidates.Top().ID)
-				}
+					if distance < worstResultDistance || results.Len() < ef {
+						candidates.Insert(neighborID, distance)
+						if level == 0 && allowList != nil {
+							// we are on the lowest Level containing the actual candidates and we
+							// have an allow list (i.e. the user has probably set some sort of a
+							// filter restricting this search further. As a result we have to
+							// ignore items not on the list
+							if !allowList.Contains(neighborID) {
+								return
+							}
+						}
 
-				// +1 because we have added one node size calculating the len
-				if results.Len() > ef {
-					results.Pop()
-				}
+						if h.hasTombstone(neighborID) {
+							return
+						}
 
-				if results.Len() > 0 {
-					worstResultDistance = results.Top().Dist
-				}
+						results.Insert(neighborID, distance)
+
+						if h.compressed.Load() {
+							h.compressedVectorsCache.prefetch(candidates.Top().ID)
+						} else {
+							h.cache.prefetch(candidates.Top().ID)
+						}
+
+						// +1 because we have added one node size calculating the len
+						if results.Len() > ef {
+							results.Pop()
+						}
+
+						if results.Len() > 0 {
+							worstResultDistance = results.Top().Dist
+						}
+					}
+				}(neighborID)
 			}
-		}
+			connectionWg.Wait()
+		}(candidate)
 	}
-
+	wg.Wait()
 	h.pools.pqCandidates.Put(candidates)
 
 	h.pools.visitedListsLock.Lock()

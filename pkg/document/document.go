@@ -213,7 +213,7 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			return err
 		}
 	}
-	docIsOpen, err := c.api.DocIsOpen(c.sessionId, c.pod, collection)
+	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, collection)
 	if err != nil {
 		return err
 	}
@@ -252,10 +252,6 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 		c.hnswLock.Lock()
 		c.indices[collection] = index
 		c.hnswLock.Unlock()
-		err = c.api.DocOpen(c.sessionId, c.pod, collection)
-		if err != nil {
-			return err
-		}
 	}
 
 	c.hnswLock.Lock()
@@ -306,7 +302,7 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 			return nil, err
 		}
 	}
-	docIsOpen, err := c.api.DocIsOpen(c.sessionId, c.pod, collection)
+	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, collection)
 	if err != nil {
 		return nil, err
 	}

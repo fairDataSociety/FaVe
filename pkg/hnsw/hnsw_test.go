@@ -9,7 +9,6 @@ import (
 	"github.com/fairdatasociety/fairOS-dfs/pkg/feed"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
-	ent "github.com/weaviate/weaviate/entities/vectorindex/hnsw"
 	"log"
 	"os"
 	"testing"
@@ -66,7 +65,7 @@ func TestHnsw(t *testing.T) {
 		DistanceProvider:      distancer.NewCosineDistanceProvider(),
 		VectorForIDThunk:      testVectorForID,
 		ClassName:             tableName,
-	}, ent.UserConfig{
+	}, UserConfig{
 		MaxConnections: 30,
 		EFConstruction: 60,
 	}, kvStore)

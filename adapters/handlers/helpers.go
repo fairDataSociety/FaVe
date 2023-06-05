@@ -25,3 +25,10 @@ func errPayloadFromSingleErr(err error) *models.ErrorResponse {
 		Message: fmt.Sprintf("%s", err),
 	}}}
 }
+
+// createOKResponseObject is a common function to create an ok response
+func createOKResponseObject(messages string) *models.OKResponse {
+	return &models.OKResponse{
+		Message: messages,
+	}
+}

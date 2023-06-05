@@ -64,7 +64,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -111,7 +114,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection removed"
+            "description": "collection removed",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -159,7 +165,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -339,6 +348,15 @@ func init() {
         }
       }
     },
+    "OKResponse": {
+      "description": "An ok response given by FaVe end-points.",
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
     "PropertySchema": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object"
@@ -401,7 +419,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -448,7 +469,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection removed"
+            "description": "collection removed",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -496,7 +520,10 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added"
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
           },
           "400": {
             "description": "Malformed request.",
@@ -675,6 +702,15 @@ func init() {
         },
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      }
+    },
+    "OKResponse": {
+      "description": "An ok response given by FaVe end-points.",
+      "type": "object",
+      "properties": {
+        "message": {
           "type": "string"
         }
       }
