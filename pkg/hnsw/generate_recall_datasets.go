@@ -22,7 +22,7 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
+	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 )
 
 func main() {

@@ -182,6 +182,7 @@ type VectorIndex interface {
 	Add(id uint64, vector []float32) error
 	KnnSearchByVectorMaxDist(query []float32, dist float32, ef int,
 		allowList helpers.AllowList) ([]uint64, error)
+	SearchByVectorDistance(query []float32, targetDistance float32, maxLimit int64, allowList helpers.AllowList) ([]uint64, []float32, error)
 }
 
 type BufferedLinksLogger interface {
@@ -590,8 +591,9 @@ func (h *hnsw) isEmptyUnsecured() bool {
 
 func (h *hnsw) nodeByID(id uint64) *vertex {
 	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
+	fmt.Println("nodeByID: got node", id, value, err)
 	if err != nil {
-		fmt.Println("nodeByID: could not get node", err)
+		fmt.Println("nodeByID: could not get node", id, err)
 		return nil
 	}
 	var v *vertex

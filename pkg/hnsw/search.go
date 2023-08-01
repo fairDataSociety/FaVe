@@ -269,6 +269,7 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 						distance, ok, err = h.distanceToByteNode(byteDistancer, neighborID)
 					} else {
 						distance, ok, err = h.distanceToFloatNode(floatDistancer, neighborID)
+
 					}
 					if err != nil {
 						h.logger.Errorf("calculate distance between candidate and query: %v", err)
@@ -440,7 +441,6 @@ func (h *hnsw) distanceToFloatNode(distancer distancer.Distancer,
 	if err != nil {
 		return 0, false, errors.Wrap(err, "calculate distance between candidate and query")
 	}
-
 	return dist, true, nil
 }
 

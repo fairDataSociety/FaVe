@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	dfsLookup "github.com/fairDataSociety/FaVe/pkg/lookup/dfs"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/fairDataSociety/FaVe/pkg/lookup"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/blockstore/bee/mock"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
@@ -29,7 +30,7 @@ const (
 func TestFave(t *testing.T) {
 	mockClient := mock.NewMockBeeClient()
 	ens := mock2.NewMockNamespaceManager()
-	logger := logging.New(os.Stdout, logrus.InfoLevel)
+	logger := logging.New(os.Stdout, logrus.ErrorLevel)
 
 	users := user.NewUsers(mockClient, ens, logger)
 	dfsApi := dfs.NewMockDfsAPI(mockClient, users, logger)
@@ -80,7 +81,7 @@ func TestFave(t *testing.T) {
 			Properties: map[string]interface{}{
 				"category": "SCIENCE",
 				"question": "This is an organ that filters blood",
-				"answer":   "Liver",
+				"answer":   "Thursday",
 			},
 		},
 		{
@@ -88,7 +89,7 @@ func TestFave(t *testing.T) {
 			Properties: map[string]interface{}{
 				"category": "ANIMALS",
 				"question": "It's the only living mammal in the order Proboseidea",
-				"answer":   "Elephant",
+				"answer":   "Michael",
 			},
 		},
 		{
@@ -96,7 +97,7 @@ func TestFave(t *testing.T) {
 			Properties: map[string]interface{}{
 				"category": "SCIENCE",
 				"question": "Changes in the tropospheric layer of this are what gives us weather",
-				"answer":   "the atmosphere",
+				"answer":   "China",
 			},
 		},
 	}
@@ -114,7 +115,108 @@ func TestFave(t *testing.T) {
 	}
 
 	// Test search
-	docs, err := client.GetNearDocuments(col.Name, "atmosphere", .1)
+	docs, err := client.GetNearDocuments(col.Name, "Thursday", .1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, doc := range docs {
+		fmt.Println(string(doc))
+	}
+}
+
+func TestFaveMultipleAdd(t *testing.T) {
+	mockClient := mock.NewMockBeeClient()
+	ens := mock2.NewMockNamespaceManager()
+	logger := logging.New(os.Stdout, logrus.ErrorLevel)
+
+	users := user.NewUsers(mockClient, ens, logger)
+	dfsApi := dfs.NewMockDfsAPI(mockClient, users, logger)
+	defer dfsApi.Close()
+
+	_, err := dfsApi.CreateUserV2(username, password, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ref := lookupPrep(t, dfsApi)
+	cfg := Config{
+		Verbose:     false,
+		GlovePodRef: ref,
+	}
+	client, err := New(cfg, dfsApi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client.Login(username, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client.OpenPod("Fave")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	col := &Collection{
+		Name: "Question",
+		Indexes: map[string]collection.IndexType{
+			"category": collection.StringIndex,
+			"question": collection.StringIndex,
+			"answer":   collection.StringIndex,
+		},
+	}
+
+	err = client.CreateCollection(col)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	documents := []*Document{
+		{
+			ID: "36ddd591-2dee-4e7e-a3cc-eb86d30a4303",
+			Properties: map[string]interface{}{
+				"category": "SCIENCE",
+				"question": "This is an organ that filters blood",
+				"answer":   "Thursday",
+			},
+		},
+		{
+			ID: "36ddd591-2dee-4e7e-a3cc-eb86d30a4304",
+			Properties: map[string]interface{}{
+				"category": "ANIMALS",
+				"question": "It's the only living mammal in the order Proboseidea",
+				"answer":   "Michael",
+			},
+		},
+		{
+			ID: "36ddd591-2dee-4e7e-a3cc-eb86d30a4305",
+			Properties: map[string]interface{}{
+				"category": "SCIENCE",
+				"question": "Changes in the tropospheric layer of this are what gives us weather",
+				"answer":   "China",
+			},
+		},
+	}
+
+	err = client.AddDocuments(col.Name, documents...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = client.AddDocuments(col.Name, documents...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, _ := range documents {
+		s, v, err := dfsApi.KVGet(client.sessionId, client.pod, col.Name, fmt.Sprintf("%d", i))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(s, string(v))
+	}
+
+	// Test search
+	docs, err := client.GetNearDocuments(col.Name, "Thursday", .1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +232,7 @@ func lookupPrep(t *testing.T, api *dfs.API) string {
 	}
 	sessionId := resp.UserInfo.GetSessionId()
 	pod := "glove"
-	table := lookup.GloveStore
+	table := dfsLookup.GloveStore
 
 	_, err = api.CreatePod(pod, sessionId)
 	if err != nil {
@@ -145,64 +247,72 @@ func lookupPrep(t *testing.T, api *dfs.API) string {
 		t.Fatal(err)
 	}
 
-	batch, err := api.KVBatch(sessionId, pod, table, []string{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	file, err := os.Open("../../tools/dev/en_test-vectors-small.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
+	lastFile := 4
 
-	var vectorLength int = -1
-	var nrWords int = 0
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		nrWords += 1
-		parts := strings.Split(scanner.Text(), " ")
-
-		word := parts[0]
-		if vectorLength == -1 {
-			vectorLength = len(parts) - 1
-		}
-
-		if vectorLength != len(parts)-1 {
-			log.Print("Line corruption found for the word [" + word + "]. Lenght expected " + strconv.Itoa(vectorLength) + " but found " + strconv.Itoa(len(parts)) + ". Word will be skipped.")
-			continue
-		}
-
-		// pre-allocate a vector for speed.
-		vector := make([]float32, vectorLength)
-
-		for i := 1; i <= vectorLength; i++ {
-			float, err := strconv.ParseFloat(parts[i], 64)
-			if err != nil {
-				t.Fatal(err)
-			}
-			vector[i-1] = float32(float)
-		}
-
-		var buf bytes.Buffer
-		if err := gob.NewEncoder(&buf).Encode(vector); err != nil {
-			t.Fatal(err)
-		}
-
-		err = batch.Put(word, buf.Bytes(), true, true)
+	for j := 1; j <= lastFile; j++ {
+		batch, err := api.KVBatch(sessionId, pod, table, []string{})
 		if err != nil {
 			t.Fatal(err)
 		}
-	}
+		now := time.Now()
+		fmt.Println("starting file ../../tools/dev/glove_segments_1000/output", j)
+		// open vectors file
+		file, err := os.Open(fmt.Sprintf("../../tools/dev/glove_segments_1000/output%d.txt", j))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
 
-	_, err = batch.Write("")
-	if err != nil {
-		t.Fatal(err)
+		var vectorLength = -1
+		var count = 0
+
+		// read vectors file line by line and insert in kv store
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			count += 1
+			parts := strings.Split(scanner.Text(), " ")
+
+			word := parts[0]
+			if vectorLength == -1 {
+				vectorLength = len(parts) - 1
+			}
+
+			if vectorLength != len(parts)-1 {
+				t.Fatal("vector length mismatch. word will be skipped.")
+			}
+
+			// pre-allocate a vector for speed.
+			vector := make([]float32, vectorLength)
+
+			for i := 1; i <= vectorLength; i++ {
+				float, err := strconv.ParseFloat(parts[i], 64)
+				if err != nil {
+					t.Fatal(err)
+				}
+				vector[i-1] = float32(float)
+			}
+
+			var buf bytes.Buffer
+			if err := gob.NewEncoder(&buf).Encode(vector); err != nil {
+				t.Fatal(err)
+			}
+			err = batch.Put(word, buf.Bytes(), true, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+		}
+		_, err = batch.Write("")
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("number of words ", count, " of file ", j, "in", time.Since(now))
 	}
 
 	ref, err := api.PodShare(pod, "", sessionId)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return ref
 }

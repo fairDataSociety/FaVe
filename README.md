@@ -1,6 +1,6 @@
 ## FaVeDB
 
-FaVeDB is an open source vector database build with Fair Data Principals in mind on top of FairOS. 
+FaVeDB is a truly decentralised, open source vector database build with Fair Data Principals in mind on top of FairOS. 
 
 ## Running FaVeDB
 
@@ -10,7 +10,7 @@ export VERBOSE=
 export BEE_API=
 export RPC_API=
 export STAMP_ID=
-export GLOVE_POD_REF=
+export GLOVE_POD_REF=6739bf6365ed1517243253383e12d2852e3be8f16c8771cadd8928504226919e
 export USER=
 export PASSWORD=
 export POD=
@@ -31,4 +31,8 @@ Then run the following command
 go run cmd/fave-server/main.go --port 1234
 ```
 
-## Using FaVeDB
+## Generate the server from openapi spec
+
+```
+go generate
+```

@@ -34,7 +34,8 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 		Verbose:     config.Verbose,
 		GlovePodRef: config.GlovePodRef,
 	}
-	ensConf, _ := contracts.TestnetConfig(contracts.Goerli)
+	//ensConf, _ := contracts.TestnetConfig(contracts.Goerli)
+	ensConf, _ := contracts.PlayConfig()
 	ensConf.ProviderBackend = config.RPCEndpoint
 	level := logrus.ErrorLevel
 	if config.Verbose {

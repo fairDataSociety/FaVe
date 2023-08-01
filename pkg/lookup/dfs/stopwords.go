@@ -1,4 +1,4 @@
-package lookup
+package dfs
 
 var Stopwords = map[string][]string{
 	"en": {

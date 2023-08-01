@@ -75,18 +75,24 @@ func main() {
 
 	// Get config for fairos
 	// TODO This will call contracts.TestConfig() eventually
-	config, _ := contracts.TestnetConfig()
+	//config, _ := contracts.TestnetConfig(contracts.Sepolia)
+	config, _ := contracts.PlayConfig()
 	config.ProviderBackend = options.EnsRPC
+
+	dfsOpts := &dfs.Options{
+		BeeApiEndpoint:     options.BeeEndpoint,
+		Stamp:              options.StampID,
+		EnsConfig:          config,
+		SubscriptionConfig: nil,
+		Logger:             logger,
+		FeedTracker:        false,
+	}
 
 	// init fairos
 	var err error
 	api, err = dfs.NewDfsAPI(
 		context.TODO(),
-		options.BeeEndpoint,
-		options.StampID,
-		config,
-		nil,
-		logger,
+		dfsOpts,
 	)
 	if err != nil {
 		logger.Errorf("new fairos api failed :%s\n", err.Error())
@@ -124,7 +130,8 @@ func main() {
 
 	// create kv table if it doesn't exist
 	err = api.KVCreate(sessionId, options.Pod, options.KVStore, options.KVIndexType)
-	if err != nil && err != collection.ErrKvTableAlreadyPresent {
+	fmt.Println("kv create error: ", err)
+	if err != nil && err != collection.ErrKvTableAlreadyPresent && err != collection.ErrIndexAlreadyPresent {
 		logger.Errorf("failed to create kv store: %s\n", err.Error())
 		return
 	}
@@ -135,19 +142,166 @@ func main() {
 		return
 	}
 	s.Suffix = fmt.Sprintf("kv table %s opened", options.KVStore)
-
-	// get kv batch for inserting vectors in batch
 	batch, err := api.KVBatch(sessionId, options.Pod, options.KVStore, []string{})
 	if err != nil {
-		logger.Errorf("failed to create kv batch action: %s\n", err.Error())
+		logger.Errorf("failed to create kv batch action: %s;\n", err.Error())
+		return
+	}
+	lastFile := 400
+	for j := 1; j <= lastFile; j++ {
+		filename := fmt.Sprintf("../../tools/dev/glove_segments_6B_300d_1000/output%d.txt", j)
+		// get kv batch for inserting vectors in batch
+		err := processfile(filename, logger, batch)
+		if err != nil {
+			logger.Errorf("failed to process file: %s : %s;\n", filename, err.Error())
+			return
+		}
+	}
+	_, err = batch.Write("")
+	if err != nil {
+		logger.Errorf("failed to write kv batch: %s\n", err.Error())
 		return
 	}
 
+	//batch, err := api.KVBatch(sessionId, options.Pod, options.KVStore, []string{})
+	//if err != nil {
+	//	logger.Errorf("failed to create kv batch action: %s;\n", err.Error())
+	//	return
+	//}
+	//// get kv batch for inserting vectors in batch
+	//now := time.Now()
+	//fmt.Println("../../tools/dev/glove.840B.300d.txt")
+	//// open vectors file
+	//file, err := os.Open("../../tools/dev/glove.840B.300d.txt")
+	//if err != nil {
+	//	logger.Errorf("failed to open vectors file: %s;\n", err.Error())
+	//	return
+	//}
+	//defer file.Close()
+	//
+	//var vectorLength = -1
+	//var count = 0
+	//
+	//// read vectors file line by line and insert in kv store
+	//scanner := bufio.NewScanner(file)
+	//for scanner.Scan() {
+	//	count += 1
+	//	parts := strings.Split(scanner.Text(), " ")
+	//
+	//	word := parts[0]
+	//	if vectorLength == -1 {
+	//		vectorLength = len(parts) - 1
+	//	}
+	//
+	//	if vectorLength != len(parts)-1 {
+	//		logger.Error("vector length mismatch. word will be skipped.")
+	//		continue
+	//	}
+	//
+	//	// pre-allocate a vector for speed.
+	//	vector := make([]float32, vectorLength)
+	//
+	//	for i := 1; i <= vectorLength; i++ {
+	//		float, err := strconv.ParseFloat(parts[i], 64)
+	//		if err != nil {
+	//			logger.Errorf("failed to parse vector to float: %s;\n", err.Error())
+	//			return
+	//		}
+	//		vector[i-1] = float32(float)
+	//	}
+	//
+	//	var buf bytes.Buffer
+	//	if err := gob.NewEncoder(&buf).Encode(vector); err != nil {
+	//		logger.Errorf("failed to encode vector: %s;\n", err.Error())
+	//		return
+	//	}
+	//	err = batch.Put(word, buf.Bytes(), true, true)
+	//	if err != nil {
+	//		logger.Errorf("could not put value for %s: %s\n", word, err.Error())
+	//	} else {
+	//		insertedHook(word)
+	//	}
+	//
+	//}
+	//_, err = batch.Write("")
+	//if err != nil {
+	//	logger.Errorf("failed to write kv batch: %s;\n", err.Error())
+	//	return
+	//}
+	//fmt.Println("number of words ", count, "in", time.Since(now))
+
+	//now := time.Now()
+	//fmt.Println("../../tools/dev/glove.840B.300d.txt")
+	//// open vectors file
+	//file, err := os.Open("../../tools/dev/glove.840B.300d.txt")
+	//if err != nil {
+	//	logger.Errorf("failed to open vectors file: %s\n", err.Error())
+	//	return
+	//}
+	//defer file.Close()
+	//
+	//var vectorLength = -1
+	//var count = 0
+	//alreadyRead := 0
+	//readCount := 0
+	//// read vectors file line by line and insert in kv store
+	//scanner := bufio.NewScanner(file)
+	//for scanner.Scan() {
+	//	readCount += 1
+	//	if readCount <= alreadyRead {
+	//		continue
+	//	}
+	//	count += 1
+	//	parts := strings.Split(scanner.Text(), " ")
+	//
+	//	word := parts[0]
+	//	if vectorLength == -1 {
+	//		vectorLength = len(parts) - 1
+	//	}
+	//
+	//	if vectorLength != len(parts)-1 {
+	//		logger.Error("vector length mismatch. word will be skipped.")
+	//		continue
+	//	}
+	//
+	//	// pre-allocate a vector for speed.
+	//	vector := make([]float32, vectorLength)
+	//
+	//	for i := 1; i <= vectorLength; i++ {
+	//		float, err := strconv.ParseFloat(parts[i], 64)
+	//		if err != nil {
+	//			logger.Errorf("failed to parse vector to float: %s\n", err.Error())
+	//			return
+	//		}
+	//		vector[i-1] = float32(float)
+	//	}
+	//
+	//	var buf bytes.Buffer
+	//	if err := gob.NewEncoder(&buf).Encode(vector); err != nil {
+	//		logger.Errorf("failed to encode vector: %s\n", err.Error())
+	//		return
+	//	}
+	//	err = api.KVPut(sessionId, options.Pod, options.KVStore, word, buf.Bytes())
+	//	if err != nil {
+	//		logger.Errorf("could not put value for %s:, failed at %d\n", err.Error(), readCount)
+	//	} else {
+	//		insertedHook(word)
+	//	}
+	//
+	//}
+	//
+	//fmt.Println("number of words ", count, "in", time.Since(now))
+}
+
+func processfile(filename string, logger logging.Logger, batch *collection.Batcher) error {
+	now := time.Now()
+	fmt.Println("starting file ", filename)
 	// open vectors file
-	file, err := os.Open(options.VectorCSVPath)
+	//fmt.Sprintf("../../tools/dev/glove_segments_1000/output%d.txt", j)
+	file, err := os.Open(filename)
 	if err != nil {
-		logger.Errorf("failed to open vectors file: %s\n", err.Error())
-		return
+		logger.Errorf("failed to open vectors file: %s; file: %s\n", err.Error(), filename)
+		return err
 	}
 	defer file.Close()
 
@@ -176,16 +330,16 @@ func main() {
 		for i := 1; i <= vectorLength; i++ {
 			float, err := strconv.ParseFloat(parts[i], 64)
 			if err != nil {
-				logger.Errorf("failed to parse vector to float: %s\n", err.Error())
-				return
+				logger.Errorf("failed to parse vector to float: %s; file: %s\n", err.Error(), filename)
+				return err
 			}
 			vector[i-1] = float32(float)
 		}
 
 		var buf bytes.Buffer
 		if err := gob.NewEncoder(&buf).Encode(vector); err != nil {
-			logger.Errorf("failed to encode vector: %s\n", err.Error())
-			return
+			logger.Errorf("failed to encode vector: %s; file: %s\n", err.Error(), filename)
+			return err
 		}
 		err = batch.Put(word, buf.Bytes(), true, true)
 		if err != nil {
@@ -195,10 +349,7 @@ func main() {
 		}
 
 	}
-	_, err = batch.Write("")
-	if err != nil {
-		logger.Errorf("failed to write kv batch: %s\n", err.Error())
-		return
-	}
-	fmt.Println("number of words ", count)
+
+	fmt.Println("number of words ", count, " of file ", filename, "in", time.Since(now))
+	return nil
 }

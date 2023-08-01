@@ -1,13 +1,16 @@
-package lookup
+package dfs
 
 import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"math"
 	"strings"
+	"sync"
 	"unicode"
 
+	lkupr "github.com/fairDataSociety/FaVe/pkg/lookup"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/utils"
 )
@@ -21,6 +24,7 @@ const (
 // Lookup vector embedding from kv store
 type Lookup struct {
 	store     dfs.KVGetter
+	cache     *lru.Cache
 	storeName string
 	stopWords map[string]int
 }
@@ -49,11 +53,17 @@ func New(api *dfs.API, sharingRefString, storeName string, stopWords []string) (
 	if err := store.OpenKVTable(storeName, shareInfo.Password); err != nil {
 		return nil, err
 	}
-	return &Lookup{
+
+	lkup := &Lookup{
 		store:     store,
 		storeName: storeName,
 		stopWords: lookupMap,
-	}, nil
+	}
+	cache, err := lru.New(10000)
+	if err == nil {
+		lkup.cache = cache
+	}
+	return lkup, nil
 }
 
 func (lookup *Lookup) Get(key string) []float32 {
@@ -67,9 +77,9 @@ func split(corpus string) []string {
 	})
 }
 
-func (lookup *Lookup) Corpi(corpi []string) (*Vector, error) {
+func (lookup *Lookup) Corpi(corpi []string) (*lkupr.Vector, error) {
 	var (
-		corpusVectors []Vector
+		corpusVectors []lkupr.Vector
 		err           error
 	)
 	for i, corpus := range corpi {
@@ -95,14 +105,19 @@ func (lookup *Lookup) Corpi(corpi []string) (*Vector, error) {
 	return vector, nil
 }
 
-func (lookup *Lookup) getVectorForWord(word string) (*Vector, error) {
+func (lookup *Lookup) getVectorForWord(word string) (*lkupr.Vector, error) {
 	if _, ok := lookup.stopWords[word]; ok {
 		return nil, nil
 	}
+	// check if available in cache
+	if vector, ok := lookup.cache.Get(word); ok {
+		v := lkupr.NewVector(vector.([]float32))
+		return &v, nil
+	}
+
 	_, b, err := lookup.store.KVGet(lookup.storeName, word)
 	if err != nil {
 		// TODO add logger
-		fmt.Println("lookup failed", err)
 		return nil, nil
 	}
 
@@ -111,40 +126,38 @@ func (lookup *Lookup) getVectorForWord(word string) (*Vector, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := NewVector(vector)
+	v := lkupr.NewVector(vector)
+
+	lookup.cache.Add(word, vector)
 	return &v, nil
 }
 
-func (lookup *Lookup) vectors(words []string) ([]Vector, error) {
-	var vectors []Vector
-
+func (lookup *Lookup) vectors(words []string) ([]lkupr.Vector, error) {
+	vectors := make([]lkupr.Vector, len(words))
+	wg := sync.WaitGroup{}
 	for wordPos := 0; wordPos < len(words); wordPos++ {
-	additionalWordLoop:
-		for additionalWords := maxCompoundWordLength - 1; additionalWords >= 0; additionalWords-- {
-			if (wordPos + additionalWords) < len(words) {
-				// we haven't reached the end of the corpus yet, so this words plus the
-				// next n additional words could still form a compound word, we need to
-				// check.
-				// Note that n goes all the way down to zero, so once we didn't find
-				// any compound words, we're checking the individual word.
-				// TODO: check if this can be done concurrently
-				compound := compound(nextWords(words, wordPos, additionalWords)...)
-				vector, err := lookup.getVectorForWord(compound)
-				if err != nil {
-					return nil, err
-				}
-				if vector != nil {
-					// this compound word exists, use its vector and occurrence
-					vectors = append(vectors, *vector)
-
-					// however, now we must make sure to skip the additionalWords
-					wordPos += additionalWords
-					break additionalWordLoop
-				}
+		wg.Add(1)
+		go func(wordPos int) {
+			defer wg.Done()
+			vector, err := lookup.getVectorForWord(words[wordPos])
+			if err != nil {
+				return
 			}
+			if vector != nil {
+				// this compound word exists, use its vector and occurrence
+				vectors[wordPos] = *vector
+			}
+		}(wordPos)
+	}
+	wg.Wait()
+
+	finalVectors := []lkupr.Vector{}
+	for _, v := range vectors {
+		if v.Len() > 0 {
+			finalVectors = append(finalVectors, v)
 		}
 	}
-	return vectors, nil
+	return finalVectors, nil
 }
 
 func nextWords(words []string, startPos int, additional int) []string {
@@ -156,7 +169,7 @@ func compound(words ...string) string {
 	return strings.Join(words, "_")
 }
 
-func computeCentroid(vectors []Vector) (*Vector, error) {
+func computeCentroid(vectors []lkupr.Vector) (*lkupr.Vector, error) {
 	var occr = make([]uint64, len(vectors))
 
 	for i := 0; i < len(vectors); i++ {
@@ -170,7 +183,7 @@ func computeCentroid(vectors []Vector) (*Vector, error) {
 	return ComputeWeightedCentroid(vectors, weights)
 }
 
-func ComputeWeightedCentroid(vectors []Vector, weights []float32) (*Vector, error) {
+func ComputeWeightedCentroid(vectors []lkupr.Vector, weights []float32) (*lkupr.Vector, error) {
 
 	if len(vectors) == 0 {
 		return nil, fmt.Errorf("can not compute centroid of empty slice")
@@ -200,7 +213,7 @@ func ComputeWeightedCentroid(vectors []Vector, weights []float32) (*Vector, erro
 			newVector[i] /= weightSum
 		}
 
-		result := NewVector(newVector)
+		result := lkupr.NewVector(newVector)
 		return &result, nil
 	}
 }

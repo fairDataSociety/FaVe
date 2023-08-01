@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"sync"
-
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
+	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 	"github.com/fairDataSociety/FaVe/pkg/lookup"
+	"github.com/fairDataSociety/FaVe/pkg/lookup/contextionary"
+	dfsLookup "github.com/fairDataSociety/FaVe/pkg/lookup/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/pod"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/sirupsen/logrus"
-	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
+	"os"
+	"sync"
 )
 
 const (
@@ -31,15 +33,16 @@ type Config struct {
 }
 
 type Client struct {
-	lock      sync.Mutex
-	hnswLock  sync.RWMutex
-	api       *dfs.API
-	indices   map[string]h.VectorIndex
-	pod       string
-	logger    logging.Logger
-	sessionId string
-	podInfo   *pod.Info
-	lookup    *lookup.Lookup
+	lock          sync.Mutex
+	hnswLock      sync.RWMutex
+	api           *dfs.API
+	indices       map[string]h.VectorIndex
+	pod           string
+	logger        logging.Logger
+	sessionId     string
+	podInfo       *pod.Info
+	lookup        lookup.Lookuper
+	documentCache *lru.Cache
 }
 
 type Collection struct {
@@ -60,18 +63,32 @@ func New(config Config, api *dfs.API) (*Client, error) {
 	}
 	logger := logging.New(os.Stdout, level)
 
-	// TODO support multiple languages
-	lkup, err := lookup.New(api, config.GlovePodRef, lookup.GloveStore, lookup.Stopwords["en"])
-	if err != nil {
-		logger.Errorf("new lookup failed :%s\n", err.Error())
-		return nil, err
-	}
-	return &Client{
+	client := &Client{
 		api:     api,
 		logger:  logger,
-		lookup:  lkup,
 		indices: map[string]h.VectorIndex{},
-	}, nil
+	}
+	// TODO support multiple languages
+	if config.GlovePodRef != "" {
+		lkup, err := dfsLookup.New(api, config.GlovePodRef, dfsLookup.GloveStore, dfsLookup.Stopwords["en"])
+		if err != nil {
+			logger.Errorf("new lookuper failed :%s\n", err.Error())
+			return nil, err
+		}
+		client.lookup = lkup
+	} else {
+		lkup, err := contextionary.New("localhost:9999")
+		if err != nil {
+			logger.Errorf("new contextionary lookuper failed :%s\n", err.Error())
+			return nil, err
+		}
+		client.lookup = lkup
+	}
+	documentCache, err := lru.New(1000)
+	if err == nil {
+		client.documentCache = documentCache
+	}
+	return client, nil
 }
 
 func (c *Client) Login(username, password string) error {
@@ -110,6 +127,9 @@ func (c *Client) OpenPod(pod string) error {
 func (c *Client) CreateCollection(col *Collection) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if c.sessionId == "" {
 		return dfs.ErrUserNotLoggedIn
 	}
@@ -117,11 +137,12 @@ func (c *Client) CreateCollection(col *Collection) error {
 		return dfs.ErrPodNotOpen
 	}
 	col.Indexes[hnswIndexName] = collection.NumberIndex
-	err := c.api.DocCreate(c.sessionId, c.pod, col.Name, col.Indexes, true)
-	if err != nil {
-		return err
-	}
+
 	vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+		// check if the document is in the cache
+		if v, ok := c.documentCache.Get(fmt.Sprintf("%s/%s/%d", c.pod, col.Name, id)); ok {
+			return v.([]float32), nil
+		}
 		expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
 		docs, err := c.api.DocFind(c.sessionId, c.pod, col.Name, expr, 1)
 		if err != nil {
@@ -133,18 +154,58 @@ func (c *Client) CreateCollection(col *Collection) error {
 		if err != nil {
 			return nil, err
 		}
-		return convertToFloat32Slice(data["vector"])
+		vector, err := convertToFloat32Slice(data["vector"])
+		if err != nil {
+			return nil, err
+		}
+		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, col.Name, id), vector)
+		return vector, err
 	}
 	kvStore := c.podInfo.GetKVStore()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	err = kvStore.CreateKVTable(col.Name, c.podInfo.GetPodPassword(), collection.StringIndex)
-	if err != nil && err != collection.ErrKvTableAlreadyPresent {
-		return err
-	}
-	err = kvStore.OpenKVTable(col.Name, c.podInfo.GetPodPassword())
-	if err != nil {
-		return err
-	}
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		err := c.api.DocCreate(c.sessionId, c.pod, col.Name, col.Indexes, true)
+		if err != nil {
+			cancel()
+			return
+		}
+		err = c.api.DocOpen(c.sessionId, c.pod, col.Name)
+		if err != nil {
+			cancel()
+			return
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		err := kvStore.CreateKVTable(col.Name, c.podInfo.GetPodPassword(), collection.StringIndex)
+		if err != nil && err != collection.ErrKvTableAlreadyPresent {
+			cancel()
+			return
+		}
+		err = kvStore.OpenKVTable(col.Name, c.podInfo.GetPodPassword())
+		if err != nil {
+			cancel()
+			return
+		}
+	}()
+
+	wg.Wait()
 	makeCL := h.MakeNoopCommitLogger
 	index, err := h.New(h.Config{
 		RootPath:              "not-used",
@@ -164,7 +225,7 @@ func (c *Client) CreateCollection(col *Collection) error {
 	c.hnswLock.Lock()
 	c.indices[col.Name] = index
 	c.hnswLock.Unlock()
-	return c.api.DocOpen(c.sessionId, c.pod, col.Name)
+	return ctx.Err()
 }
 
 func (c *Client) DeleteCollection(collection string) error {
@@ -219,6 +280,10 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 	}
 	if !docIsOpen {
 		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+			// check if the document is in the cache
+			if v, ok := c.documentCache.Get(fmt.Sprintf("%s/%s/%d", c.pod, collection, id)); ok {
+				return v.([]float32), nil
+			}
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
 			docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
 			if err != nil {
@@ -230,7 +295,12 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			if err != nil {
 				return nil, err
 			}
-			return convertToFloat32Slice(data["vector"])
+			vector, err := convertToFloat32Slice(data["vector"])
+			if err != nil {
+				return nil, err
+			}
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector)
+			return vector, err
 		}
 
 		makeCL := h.MakeNoopCommitLogger
@@ -252,6 +322,10 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 		c.hnswLock.Lock()
 		c.indices[collection] = index
 		c.hnswLock.Unlock()
+		err = c.api.DocOpen(c.sessionId, c.pod, collection)
+		if err != nil {
+			return err
+		}
 	}
 
 	c.hnswLock.Lock()
@@ -269,6 +343,7 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			c.logger.Errorf("corpi failed :%s\n", err.Error())
 			continue
 		}
+
 		doc.Properties["vector"] = vector.ToArray()
 
 		doc.Properties[hnswIndexName] = id
@@ -278,17 +353,24 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
+		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector.ToArray())
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err = index.Add(uint64(id), vector.ToArray())
+			if err != nil {
+				c.logger.Errorf("index.Add failed :%s\n", err.Error())
+				return
+			}
+
+		}()
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
 			c.logger.Errorf("DocPut failed :%s\n", err.Error())
-			return err
-		}
-
-		err = index.Add(uint64(id), vector.ToArray())
-		if err != nil {
-			c.logger.Errorf("index.Add failed :%s\n", err.Error())
 			continue
 		}
+		wg.Wait()
 	}
 	return nil
 }
@@ -308,6 +390,9 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	}
 	if !docIsOpen {
 		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+			if v, ok := c.documentCache.Get(fmt.Sprintf("%s/%s/%d", c.pod, collection, id)); ok {
+				return v.([]float32), nil
+			}
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
 			docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
 			if err != nil {
@@ -319,7 +404,12 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 			if err != nil {
 				return nil, err
 			}
-			return convertToFloat32Slice(data["vector"])
+			vector, err := convertToFloat32Slice(data["vector"])
+			if err != nil {
+				return nil, err
+			}
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector)
+			return vector, nil
 		}
 
 		makeCL := h.MakeNoopCommitLogger
@@ -354,19 +444,35 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	c.hnswLock.Lock()
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
-	ids, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 36, nil)
+	ids, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
 	if err != nil {
 		return nil, err
 	}
 	documents := make([][]byte, len(ids))
+	wg := sync.WaitGroup{}
+	errCh := make(chan error, len(ids))
 	for i, id := range ids {
-		expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
-		docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
-		if err != nil {
-			return nil, err
-		}
-		documents[i] = docs[0]
+		wg.Add(1)
+		go func(i int, id uint64) {
+			defer wg.Done()
+			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			documents[i] = docs[0]
+		}(i, id)
 	}
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		return nil, err
+	}
+
 	return documents, nil
 }
 func convertToFloat32Slice(i interface{}) ([]float32, error) {

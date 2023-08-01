@@ -508,7 +508,6 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 	}
 	maxNodes := int(kvCount.Count)
 	h.RUnlock()
-
 	for l := targetLevel; l >= 0; l-- {
 		// ideally we can find a new entrypoint at the same Level of the
 		// to-be-deleted node. However, there is a chance it was the only node on
@@ -521,7 +520,6 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 			h.RLock()
 			candidate := h.nodeByID(uint64(i))
 			h.RUnlock()
-
 			if candidate == nil {
 				continue
 			}
@@ -539,7 +537,8 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 			return uint64(i), l
 		}
 	}
-
+	// TODO this is a temp fix for panic
+	//return 0, 0
 	panic("findNewLocalEntrypoint called on an empty hnsw graph")
 }
 

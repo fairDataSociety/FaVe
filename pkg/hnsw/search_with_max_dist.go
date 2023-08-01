@@ -68,6 +68,9 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 	out := make([]uint64, len(all))
 	i = 0
 	for _, elem := range all {
+		if elem.Dist < 0 {
+			continue
+		}
 		if elem.Dist > dist {
 			break
 		}
