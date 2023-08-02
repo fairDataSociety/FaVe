@@ -89,7 +89,7 @@ func TestHnsw(t *testing.T) {
 	}
 
 	position := 0
-	ids, err := index.KnnSearchByVectorMaxDist(testVectors[position], 0.2, 36, nil)
+	ids, _, err := index.KnnSearchByVectorMaxDist(testVectors[position], 0.2, 36, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

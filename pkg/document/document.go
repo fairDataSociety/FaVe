@@ -7,8 +7,8 @@ import (
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 	"github.com/fairDataSociety/FaVe/pkg/lookup"
-	"github.com/fairDataSociety/FaVe/pkg/lookup/contextionary"
 	dfsLookup "github.com/fairDataSociety/FaVe/pkg/lookup/dfs"
+	"github.com/fairDataSociety/FaVe/pkg/lookup/leveldb"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
@@ -30,6 +30,7 @@ const (
 type Config struct {
 	Verbose     bool
 	GlovePodRef string
+	LevelDBPath string
 }
 
 type Client struct {
@@ -69,21 +70,22 @@ func New(config Config, api *dfs.API) (*Client, error) {
 		indices: map[string]h.VectorIndex{},
 	}
 	// TODO support multiple languages
-	if config.GlovePodRef != "" {
-		lkup, err := dfsLookup.New(api, config.GlovePodRef, dfsLookup.GloveStore, dfsLookup.Stopwords["en"])
-		if err != nil {
-			logger.Errorf("new lookuper failed :%s\n", err.Error())
-			return nil, err
-		}
-		client.lookup = lkup
-	} else {
-		lkup, err := contextionary.New("localhost:9999")
-		if err != nil {
-			logger.Errorf("new contextionary lookuper failed :%s\n", err.Error())
-			return nil, err
-		}
-		client.lookup = lkup
+	//if config.GlovePodRef != "" {
+	//	lkup, err := dfsLookup.New(api, config.GlovePodRef, dfsLookup.GloveStore, dfsLookup.Stopwords["en"])
+	//	if err != nil {
+	//		logger.Errorf("new lookuper failed :%s\n", err.Error())
+	//		return nil, err
+	//	}
+	//	client.lookup = lkup
+	//}
+
+	// leveldb lookuper
+	lkup, err := leveldb.New(config.LevelDBPath, dfsLookup.Stopwords["en"])
+	if err != nil {
+		logger.Errorf("new lookuper failed :%s\n", err.Error())
+		return nil, err
 	}
+	client.lookup = lkup
 	documentCache, err := lru.New(1000)
 	if err == nil {
 		client.documentCache = documentCache
@@ -338,6 +340,7 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 		for _, prop := range doc.Properties {
 			vectorData += prop.(string) + " "
 		}
+		fmt.Println(vectorData)
 		vector, err := c.lookup.Corpi([]string{vectorData})
 		if err != nil {
 			c.logger.Errorf("corpi failed :%s\n", err.Error())
@@ -375,18 +378,18 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 	return nil
 }
 
-func (c *Client) GetNearDocuments(collection, text string, distance float32) ([][]byte, error) {
+func (c *Client) GetNearDocuments(collection, text string, distance float32) ([][]byte, []float32, error) {
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(collection)
 	if err != nil {
 		err = kvStore.OpenKVTable(collection, c.podInfo.GetPodPassword())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, collection)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !docIsOpen {
 		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
@@ -425,7 +428,7 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 			EFConstruction: 60,
 		}, kvStore)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		c.hnswLock.Lock()
@@ -433,20 +436,20 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 		c.hnswLock.Unlock()
 		err = c.api.DocOpen(c.sessionId, c.pod, collection)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	vector, err := c.lookup.Corpi([]string{text})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	c.hnswLock.Lock()
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
-	ids, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
+	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	documents := make([][]byte, len(ids))
 	wg := sync.WaitGroup{}
@@ -470,10 +473,10 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	}()
 
 	for err := range errCh {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return documents, nil
+	return documents, dists, nil
 }
 func convertToFloat32Slice(i interface{}) ([]float32, error) {
 	// Check if the underlying value is a slice

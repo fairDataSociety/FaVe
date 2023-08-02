@@ -47,7 +47,7 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 	if req.Text == "" {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Search text should not be blank"))
 	}
-	documentsRaw, err := s.doc.GetNearDocuments(req.Name, req.Text, req.Distance)
+	documentsRaw, dists, err := s.doc.GetNearDocuments(req.Name, req.Text, req.Distance)
 	if err != nil {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))
 	}
@@ -64,6 +64,7 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 		}
 		delete(props, "id")
 		delete(props, "vector")
+		props["distance"] = dists[i]
 		d.Properties = props
 		documents[i] = d
 	}

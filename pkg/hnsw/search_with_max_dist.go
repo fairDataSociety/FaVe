@@ -21,15 +21,15 @@ import (
 
 func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 	ef int, allowList helpers.AllowList,
-) ([]uint64, error) {
+) ([]uint64, []float32, error) {
 	entryPointID := h.entryPointID
 	entryPointDistance, ok, err := h.distBetweenNodeAndVec(entryPointID, searchVec)
 	if err != nil {
-		return nil, errors.Wrap(err, "knn search: distance between entrypoint and query node")
+		return nil, nil, errors.Wrap(err, "knn search: distance between entrypoint and query node")
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("entrypoint was deleted in the object store, " +
+		return nil, nil, fmt.Errorf("entrypoint was deleted in the object store, " +
 			"it has been flagged for cleanup and should be fixed in the next cleanup cycle")
 	}
 
@@ -40,7 +40,7 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 		// ignore allowList on layers > 0
 		res, err := h.searchLayerByVector(searchVec, eps, 1, level, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "knn search: search layer at Level %d", level)
+			return nil, nil, errors.Wrapf(err, "knn search: search layer at Level %d", level)
 		}
 		if res.Len() > 0 {
 			best := res.Pop()
@@ -55,7 +55,7 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 	eps.Insert(entryPointID, entryPointDistance)
 	res, err := h.searchLayerByVector(searchVec, eps, ef, 0, allowList)
 	if err != nil {
-		return nil, errors.Wrapf(err, "knn search: search layer at Level %d", 0)
+		return nil, nil, errors.Wrapf(err, "knn search: search layer at Level %d", 0)
 	}
 
 	all := make([]priorityqueue.Item, res.Len())
@@ -66,6 +66,7 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 	}
 
 	out := make([]uint64, len(all))
+	dists := make([]float32, len(all))
 	i = 0
 	for _, elem := range all {
 		if elem.Dist < 0 {
@@ -75,9 +76,10 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 			break
 		}
 		out[i] = elem.ID
+		dists[i] = elem.Dist
 		i++
 	}
 
 	h.pools.pqResults.Put(res)
-	return out[:i], nil
+	return out[:i], dists, nil
 }

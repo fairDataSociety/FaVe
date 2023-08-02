@@ -115,7 +115,7 @@ func TestFave(t *testing.T) {
 	}
 
 	// Test search
-	docs, err := client.GetNearDocuments(col.Name, "Thursday", .1)
+	docs, _, err := client.GetNearDocuments(col.Name, "Thursday", .1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +216,7 @@ func TestFaveMultipleAdd(t *testing.T) {
 	}
 
 	// Test search
-	docs, err := client.GetNearDocuments(col.Name, "Thursday", .1)
+	docs, _, err := client.GetNearDocuments(col.Name, "Thursday", .1)
 	if err != nil {
 		t.Fatal(err)
 	}

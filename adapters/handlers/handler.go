@@ -23,6 +23,7 @@ type HandlerConfig struct {
 	RPCEndpoint string
 	StampId     string
 	GlovePodRef string
+	LevelDBPath string
 	Username    string
 	Password    string
 	Pod         string
@@ -33,9 +34,9 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 	documentConfig := document.Config{
 		Verbose:     config.Verbose,
 		GlovePodRef: config.GlovePodRef,
+		LevelDBPath: config.LevelDBPath,
 	}
-	//ensConf, _ := contracts.TestnetConfig(contracts.Goerli)
-	ensConf, _ := contracts.PlayConfig()
+	ensConf, _ := contracts.TestnetConfig(contracts.Sepolia)
 	ensConf.ProviderBackend = config.RPCEndpoint
 	level := logrus.ErrorLevel
 	if config.Verbose {

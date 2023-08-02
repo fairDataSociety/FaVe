@@ -21,8 +21,8 @@ func FromEnv(config *HandlerConfig) {
 		config.StampId = v
 	}
 
-	if v := os.Getenv("GLOVE_POD_REF"); v != "" {
-		config.GlovePodRef = v
+	if v := os.Getenv("LEVELDB_EMBEDDINGS_PATH"); v != "" {
+		config.LevelDBPath = v
 	}
 	if v := os.Getenv("USER"); v != "" {
 		config.Username = v
