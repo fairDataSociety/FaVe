@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unicode"
 
-	lkupr "github.com/fairDataSociety/FaVe/pkg/lookup"
+	lkupr "github.com/fairDataSociety/FaVe/pkg/vectorizer"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/utils"
 )

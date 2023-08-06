@@ -99,7 +99,7 @@ type hnsw struct {
 
 	commitLog CommitLogger
 
-	// a lookup of current tombstones (i.e. nodes that have received a tombstone,
+	// a vectorizer of current tombstones (i.e. nodes that have received a tombstone,
 	// but have not been cleaned up yet) Cleanup is the process of removal of all
 	// outgoing edges to the tombstone as well as deleting the tombstone itself.
 	// This process should happen periodically.

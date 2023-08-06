@@ -1,4 +1,4 @@
-package lookup
+package vectorizer
 
 import (
 	"fmt"

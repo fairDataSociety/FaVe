@@ -6,9 +6,8 @@ import (
 	"fmt"
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
-	"github.com/fairDataSociety/FaVe/pkg/lookup"
-	dfsLookup "github.com/fairDataSociety/FaVe/pkg/lookup/dfs"
-	"github.com/fairDataSociety/FaVe/pkg/lookup/leveldb"
+	"github.com/fairDataSociety/FaVe/pkg/vectorizer"
+	"github.com/fairDataSociety/FaVe/pkg/vectorizer/rest"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
@@ -28,9 +27,8 @@ const (
 
 // Config for fairOS-dfs
 type Config struct {
-	Verbose     bool
-	GlovePodRef string
-	LevelDBPath string
+	Verbose         bool
+	GloveLevelDBUrl string
 }
 
 type Client struct {
@@ -42,7 +40,7 @@ type Client struct {
 	logger        logging.Logger
 	sessionId     string
 	podInfo       *pod.Info
-	lookup        lookup.Lookuper
+	lookup        vectorizer.Vectorizer
 	documentCache *lru.Cache
 }
 
@@ -76,13 +74,17 @@ func New(config Config, api *dfs.API) (*Client, error) {
 	//		logger.Errorf("new lookuper failed :%s\n", err.Error())
 	//		return nil, err
 	//	}
-	//	client.lookup = lkup
+	//	client.vectorizer = lkup
 	//}
 
+	if config.GloveLevelDBUrl == "" {
+		logger.Errorf("GLOVE_LEVELDB_URL environment variable is not set")
+	}
+
 	// leveldb lookuper
-	lkup, err := leveldb.New(config.LevelDBPath, dfsLookup.Stopwords["en"])
+	lkup, err := rest.NewVectorizer(config.GloveLevelDBUrl)
 	if err != nil {
-		logger.Errorf("new lookuper failed :%s\n", err.Error())
+		logger.Errorf("new vectorizer failed :%s\n", err.Error())
 		return nil, err
 	}
 	client.lookup = lkup

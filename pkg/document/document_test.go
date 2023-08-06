@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	dfsLookup "github.com/fairDataSociety/FaVe/pkg/lookup/dfs"
+	dfsLookup "github.com/fairDataSociety/FaVe/pkg/vectorizer/dfs"
 	"log"
 	"os"
 	"strconv"

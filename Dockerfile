@@ -1,15 +1,11 @@
-# Base build image
 FROM golang:1.20-alpine AS build_base
 RUN apk add bash ca-certificates git gcc g++ libc-dev
 WORKDIR /go/src/github.com/fairDataSociety/FaVe
 ENV GO111MODULE=on
-# Populate the module cache based on the go.{mod,sum} files.
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-###############################################################################
-# This image builds the weaviate server
 FROM build_base AS server_builder
 ARG TARGETARCH
 ARG GITHASH="unknown"

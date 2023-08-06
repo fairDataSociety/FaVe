@@ -18,25 +18,24 @@ type Handler struct {
 }
 
 type HandlerConfig struct {
-	Verbose     bool
-	BeeAPI      string
-	RPCEndpoint string
-	StampId     string
-	GlovePodRef string
-	LevelDBPath string
-	Username    string
-	Password    string
-	Pod         string
+	Verbose         bool
+	BeeAPI          string
+	RPCEndpoint     string
+	StampId         string
+	GloveLevelDBUrl string
+	Username        string
+	Password        string
+	Pod             string
 }
 
 func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 	FromEnv(config)
 	documentConfig := document.Config{
-		Verbose:     config.Verbose,
-		GlovePodRef: config.GlovePodRef,
-		LevelDBPath: config.LevelDBPath,
+		Verbose:         config.Verbose,
+		GloveLevelDBUrl: config.GloveLevelDBUrl,
 	}
-	ensConf, _ := contracts.TestnetConfig(contracts.Sepolia)
+	//ensConf, _ := contracts.TestnetConfig(contracts.Sepolia)
+	ensConf, _ := contracts.PlayConfig()
 	ensConf.ProviderBackend = config.RPCEndpoint
 	level := logrus.ErrorLevel
 	if config.Verbose {
