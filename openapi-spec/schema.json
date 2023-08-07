@@ -1,0 +1,356 @@
+{
+  "basePath": "/v1",
+  "consumes": [
+    "application/yaml",
+    "application/json"
+  ],
+  "definitions": {
+    "OKResponse": {
+      "description": "An ok response given by FaVe end-points.",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ErrorResponse": {
+      "description": "An error response given by FaVe end-points.",
+      "properties": {
+        "error": {
+          "items": {
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Collection": {
+      "properties": {
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "indexes": {
+          "description": "The indexes of the collection.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "PropertySchema": {
+      "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
+      "type": "object"
+    },
+    "Document": {
+      "properties": {
+        "properties": {
+          "$ref": "#/definitions/PropertySchema"
+        },
+        "id": {
+          "description": "ID of the Object.",
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AddDocumentsRequest": {
+      "description": "Add the documents to the collection.",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "items": {
+            "$ref": "#/definitions/Document"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "NearestDocumentsRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "properties": {
+        "text": {
+          "description": "The text to search for.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "distance": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "type": "object"
+    },
+    "NearestDocumentsResponse": {
+      "description": "Response for the Nearest documents request",
+      "properties": {
+        "documents": {
+          "description": "The actual list of Objects.",
+          "items": {
+            "$ref": "#/definitions/Document"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "externalDocs": {
+    "url": "https://github.com/fairDataSociety/FaVe"
+  },
+  "info": {
+    "contact": {
+      "email": "sabyasachi@datafund.io",
+      "name": "fave",
+      "url": "https://github.com/fairDataSociety/FaVe"
+    },
+    "title": "fave",
+    "version": "1.19.0-prealpha"
+  },
+  "parameters": {},
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Home. Discover the REST API",
+        "operationId": "fave.root",
+        "responses": {
+          "200": {
+            "description": "fave is alive and ready to serve content"
+          }
+        }
+      }
+    },
+    "/collections": {
+      "post": {
+        "description": "Create a new collection.",
+        "operationId": "fave.createCollection",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Collection"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collection}": {
+      "delete": {
+        "description": "Delete a collection.",
+        "operationId": "fave.deleteCollection",
+        "parameters": [
+          {
+            "description": "Collection name",
+            "in": "path",
+            "name": "collection",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection removed",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "description": "Add documents into a collection.",
+        "operationId": "fave.addDocuments",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/OKResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/nearest-documents": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocuments",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0",
+  "tags": [
+    {
+    "description": "Everything about your fave",
+    "name": "fave"
+    }
+  ]
+}
