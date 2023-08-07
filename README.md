@@ -2,6 +2,45 @@
 
 FaVeDB is a truly decentralised, open source vector database build with Fair Data Principals in mind on top of FairOS. 
 
+## Architecture
+
+```
+               FaVe
+┌───────────────────────────────────┐
+│                                   │
+│ ┌────┐ ┌────┐ ┌────┐       ┌────┐ │
+│ │ c1 │ │ c2 │ │ c3 │ x x x │ cn │ │               ┌──────────────────────┐
+│ └─┬──┘ └─┬──┘ └──┬─┘       └─┬──┘ ├──────────────►│                      │
+│   │      │       │           │    │               │      Vectorizer      │
+│   │      │       │           │    │◄──────────────┤                      │
+│   │      │       │           │    │               └──────────────────────┘
+│   │      │       ▼           │    │
+│   ▼      ▼   FairOS-dfs      ▼    │
+│  ┌────┬────────────────────────┐  │
+│  │    │                        │  │
+│  │ ┌──▼────────┐ ┌───────────┐ │  │
+│  │ │  document │ │ key-value │ │  │
+│  │ │   store   ├─►   store   │ │  │
+│  │ └─────┬─────┘ └─────┬─────┘ │  │
+│  │       │             │       │  │
+│  │  ┌────▼─────────────▼────┐  │  │
+│  │  │         SWARM         │  │  │
+│  │  └───────────────────────┘  │  │
+│  │                             │  │
+│  └─────────────────────────────┘  │
+│                                   │
+└───────────────────────────────────┘
+```
+
+In the diagram we can see c1, c2, c3, which are collections. We can have multiple collections in a single FaVe instance.
+Collections can have documents with significant "Properties" that can be "vectorized" and stored.
+
+The properties of the documents are vectorized and stored in a specific document store in fairOS-dfs named after the 
+collection itself. While adding documents in FaVe we calculate nearest neighbours. These are then stored in a key-value 
+store in fairOS-dfs with unique key as identifiers.
+
+Under the hood, everything is store in SWARM via fairOS-dfs.
+
 ## Running FaVeDB
 
 ### From Source
@@ -40,15 +79,14 @@ docker build -t fds/fave .
 
 // run
 docker run -d --name=fave \
-    -v <LOCAL_LEVELDB_GLOVE_EMBEDDINGS_PATH>:/embeddings \
     -e VERBOSE=true \
     -e BEE_API=<BEE_API> \
     -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
     -e STAMP_ID=<STAMP_ID> \
-    -e USER=<FAIROS_USERNAMe> \
+    -e USER=<FAIROS_USERNAME> \
     -e PASSWORD=<FAIROS_PASSWORD> \
     -e POD=<POD_FOR_STORING_DB> \
-    -e LEVELDB_EMBEDDINGS_PATH=/embeddings \
+    -e GLOVE_LEVELDB_URL=<API_ENDPOINT_FOR_VECTORIZER> \
     -p 1234:1234 \
     fds/fave --port 1234 —host 0.0.0.0 
 
