@@ -39,7 +39,7 @@ The properties of the documents are vectorized and stored in a specific document
 collection itself. While adding documents in FaVe we calculate nearest neighbours. These are then stored in a key-value 
 store in fairOS-dfs with unique key as identifiers.
 
-Under the hood, everything is store in SWARM via fairOS-dfs.
+Under the hood, everything is stored in SWARM via fairOS-dfs.
 
 ## Running FaVeDB
 
