@@ -30,6 +30,7 @@ type HandlerConfig struct {
 
 func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 	FromEnv(config)
+	SetDefaults(config)
 	documentConfig := document.Config{
 		Verbose:         config.Verbose,
 		GloveLevelDBUrl: config.GloveLevelDBUrl,
