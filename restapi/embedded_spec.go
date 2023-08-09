@@ -366,7 +366,8 @@ func init() {
     },
     "PropertySchema": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "tags": [
@@ -731,7 +732,8 @@ func init() {
     },
     "PropertySchema": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "tags": [
