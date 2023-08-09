@@ -6,7 +6,7 @@
 //	  http
 //	Host: localhost
 //	BasePath: /v1
-//	Version: 1.19.0-prealpha
+//	Version: 0.0.0-prealpha
 //	Contact: fave<sabyasachi@datafund.io> https://github.com/fairDataSociety/FaVe
 //
 //	Consumes:

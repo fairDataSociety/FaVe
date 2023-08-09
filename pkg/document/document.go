@@ -268,7 +268,7 @@ func (c *Client) DeleteCollection(collection string) error {
 	return nil
 }
 
-func (c *Client) AddDocuments(collection string, documents ...*Document) error {
+func (c *Client) AddDocuments(collection string, propertiesToIndex []string, documents ...*Document) error {
 	// check if kv and doc table is open or not
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(collection)
@@ -336,13 +336,17 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
 	for id, doc := range documents {
-		// vectorise the properties
+		// vectorize the properties
 		// add the vector in the properties before adding the document in the collection
 		vectorData := ""
-		for _, prop := range doc.Properties {
-			vectorData += prop.(string) + " "
+
+		for _, property := range propertiesToIndex {
+			dt, ok := doc.Properties[property]
+			if ok {
+				vectorData += dt.(string) + " "
+			}
 		}
-		fmt.Println(vectorData)
+
 		vector, err := c.lookup.Corpi([]string{vectorData})
 		if err != nil {
 			c.logger.Errorf("corpi failed :%s\n", err.Error())

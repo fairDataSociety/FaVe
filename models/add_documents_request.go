@@ -24,6 +24,9 @@ type AddDocumentsRequest struct {
 
 	// Name of the collection as URI relative to the schema URL.
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	// Array of properties to be indexed.
+	PropertiesToIndex []string `json:"propertiesToIndex" yaml:"propertiesToIndex"`
 }
 
 // Validate validates this add documents request

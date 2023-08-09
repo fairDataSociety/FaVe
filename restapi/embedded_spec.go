@@ -33,7 +33,7 @@ func init() {
       "url": "https://github.com/fairDataSociety/FaVe",
       "email": "sabyasachi@datafund.io"
     },
-    "version": "1.19.0-prealpha"
+    "version": "0.0.0-prealpha"
   },
   "basePath": "/v1",
   "paths": {
@@ -267,6 +267,13 @@ func init() {
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
+        },
+        "propertiesToIndex": {
+          "description": "Array of properties to be indexed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -388,7 +395,7 @@ func init() {
       "url": "https://github.com/fairDataSociety/FaVe",
       "email": "sabyasachi@datafund.io"
     },
-    "version": "1.19.0-prealpha"
+    "version": "0.0.0-prealpha"
   },
   "basePath": "/v1",
   "paths": {
@@ -622,6 +629,13 @@ func init() {
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
+        },
+        "propertiesToIndex": {
+          "description": "Array of properties to be indexed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

@@ -74,6 +74,13 @@
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
+        },
+        "propertiesToIndex": {
+          "description": "Array of properties to be indexed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "type": "object"

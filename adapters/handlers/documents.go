@@ -18,6 +18,9 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 	if documentsRaw.Documents == nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Request should have at least one document"))
 	}
+	if documentsRaw.PropertiesToIndex == nil {
+		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Properties to index cannot be blank"))
+	}
 	documents := make([]*document.Document, len(documentsRaw.Documents))
 
 	for i, v := range documentsRaw.Documents {
@@ -32,7 +35,7 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 		documents[i] = d
 	}
 
-	err := s.doc.AddDocuments(documentsRaw.Name, documents...)
+	err := s.doc.AddDocuments(documentsRaw.Name, documentsRaw.PropertiesToIndex, documents...)
 	if err != nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to create add documents"))
 	}
