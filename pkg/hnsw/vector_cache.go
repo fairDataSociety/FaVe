@@ -13,8 +13,6 @@ package hnsw
 
 import (
 	"context"
-	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,7 +24,7 @@ import (
 
 type shardedLockCache struct {
 	shardedLocks        []sync.RWMutex
-	cache               *lru.Cache
+	cache               [][]float32
 	vectorForID         VectorForID
 	normalizeOnRead     bool
 	maxSize             int64
@@ -37,7 +35,7 @@ type shardedLockCache struct {
 	trackDimensionsOnce sync.Once
 	deletionInterval    time.Duration
 
-	// The maintenanceLock makes sure that only one Maintenance operation, such
+	// The maintenanceLock makes sure that only one maintenance operation, such
 	// as growing the cache or clearing the cache happens at the same time.
 	maintenanceLock sync.Mutex
 }
@@ -49,10 +47,9 @@ const defaultDeletionInterval = 3 * time.Second
 func newShardedLockCache(vecForID VectorForID, maxSize int,
 	logger logrus.FieldLogger, normalizeOnRead bool, deletionInterval time.Duration,
 ) *shardedLockCache {
-	lruCache, _ := lru.New(initialSize)
 	vc := &shardedLockCache{
 		vectorForID:      vecForID,
-		cache:            lruCache,
+		cache:            make([][]float32, initialSize),
 		normalizeOnRead:  normalizeOnRead,
 		count:            0,
 		maxSize:          int64(maxSize),
@@ -71,85 +68,68 @@ func newShardedLockCache(vecForID VectorForID, maxSize int,
 }
 
 //nolint:unused
-func (f *shardedLockCache) all() [][]float32 {
-	var allData [][]float32
-	keys := f.cache.Keys()
-
-	for _, key := range keys {
-		if value, ok := f.cache.Get(key); ok {
-			if typedValue, isTypeCorrect := value.([]float32); isTypeCorrect {
-				allData = append(allData, typedValue)
-			}
-		}
-	}
-	return allData
+func (s *shardedLockCache) all() [][]float32 {
+	return s.cache
 }
 
-func (n *shardedLockCache) get(ctx context.Context, id uint64) ([]float32, error) {
-	var vec []float32
-	if value, ok := n.cache.Get(id); ok {
-		// Assert the value to a [][]float32 type
-		if typedValue, isTypeCorrect := value.([]float32); isTypeCorrect {
-			vec = typedValue
-		} else {
-			return nil, fmt.Errorf("Data for key '%d is not of expected type\n", id)
-		}
-	}
+func (s *shardedLockCache) get(ctx context.Context, id uint64) ([]float32, error) {
+	s.shardedLocks[id%shardFactor].RLock()
+	vec := s.cache[id]
+	s.shardedLocks[id%shardFactor].RUnlock()
 
 	if vec != nil {
 		return vec, nil
 	}
 
-	return n.handleCacheMiss(ctx, id)
+	return s.handleCacheMiss(ctx, id)
 }
 
 //nolint:unused
-func (n *shardedLockCache) delete(ctx context.Context, id uint64) {
-	n.shardedLocks[id%shardFactor].Lock()
-	defer n.shardedLocks[id%shardFactor].Unlock()
+func (s *shardedLockCache) delete(ctx context.Context, id uint64) {
+	s.shardedLocks[id%shardFactor].Lock()
+	defer s.shardedLocks[id%shardFactor].Unlock()
 
-	if !n.cache.Contains(id) {
+	if int(id) >= len(s.cache) || s.cache[id] == nil {
 		return
 	}
-	n.cache.Remove(id)
-	atomic.AddInt64(&n.count, -1)
+
+	s.cache[id] = nil
+	atomic.AddInt64(&s.count, -1)
 }
 
-func (n *shardedLockCache) handleCacheMiss(ctx context.Context, id uint64) ([]float32, error) {
-	vec, err := n.vectorForID(ctx, id)
+func (s *shardedLockCache) handleCacheMiss(ctx context.Context, id uint64) ([]float32, error) {
+	vec, err := s.vectorForID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	n.trackDimensionsOnce.Do(func() {
-		atomic.StoreInt32(&n.dims, int32(len(vec)))
+	s.trackDimensionsOnce.Do(func() {
+		atomic.StoreInt32(&s.dims, int32(len(vec)))
 	})
 
-	if n.normalizeOnRead {
+	if s.normalizeOnRead {
 		vec = distancer.Normalize(vec)
 	}
 
-	atomic.AddInt64(&n.count, 1)
-	n.cache.Add(id, vec)
+	atomic.AddInt64(&s.count, 1)
+	s.shardedLocks[id%shardFactor].Lock()
+	s.cache[id] = vec
+	s.shardedLocks[id%shardFactor].Unlock()
 
 	return vec, nil
 }
 
-func (n *shardedLockCache) multiGet(ctx context.Context, ids []uint64) ([][]float32, []error) {
+func (s *shardedLockCache) multiGet(ctx context.Context, ids []uint64) ([][]float32, []error) {
 	out := make([][]float32, len(ids))
 	errs := make([]error, len(ids))
 
 	for i, id := range ids {
-		var vec []float32
-		if value, ok := n.cache.Get(id); ok {
-			// Assert the value to a [][]float32 type
-			if typedValue, isTypeCorrect := value.([]float32); isTypeCorrect {
-				vec = typedValue
-			}
-		}
+		s.shardedLocks[id%shardFactor].RLock()
+		vec := s.cache[id]
+		s.shardedLocks[id%shardFactor].RUnlock()
 
 		if vec == nil {
-			vecFromDisk, err := n.handleCacheMiss(ctx, id)
+			vecFromDisk, err := s.handleCacheMiss(ctx, id)
 			errs[i] = err
 			vec = vecFromDisk
 		}
@@ -167,145 +147,124 @@ var prefetchFunc func(in uintptr) = func(in uintptr) {
 }
 
 //nolint:unused
-func (n *shardedLockCache) prefetch(id uint64) {
-	n.shardedLocks[id%shardFactor].RLock()
-	defer n.shardedLocks[id%shardFactor].RUnlock()
+func (s *shardedLockCache) prefetch(id uint64) {
+	s.shardedLocks[id%shardFactor].RLock()
+	defer s.shardedLocks[id%shardFactor].RUnlock()
 
-	var vec []float32
-	if value, ok := n.cache.Get(id); ok {
-		// Assert the value to a [][]float32 type
-		if typedValue, isTypeCorrect := value.([]float32); isTypeCorrect {
-			vec = typedValue
-		}
-	}
-
-	prefetchFunc(uintptr(unsafe.Pointer(&vec)))
+	prefetchFunc(uintptr(unsafe.Pointer(&s.cache[id])))
 }
 
 //nolint:unused
-func (n *shardedLockCache) preload(id uint64, vec []float32) {
-	n.shardedLocks[id%shardFactor].RLock()
-	defer n.shardedLocks[id%shardFactor].RUnlock()
+func (s *shardedLockCache) preload(id uint64, vec []float32) {
+	s.shardedLocks[id%shardFactor].RLock()
+	defer s.shardedLocks[id%shardFactor].RUnlock()
 
-	atomic.AddInt64(&n.count, 1)
-	n.trackDimensionsOnce.Do(func() {
-		atomic.StoreInt32(&n.dims, int32(len(vec)))
+	atomic.AddInt64(&s.count, 1)
+	s.trackDimensionsOnce.Do(func() {
+		atomic.StoreInt32(&s.dims, int32(len(vec)))
 	})
 
-	n.cache.Add(id, vec)
+	s.cache[id] = vec
 }
 
 //nolint:unused
-func (n *shardedLockCache) grow(node uint64) {
-	if node < uint64(n.cache.Len()) {
+func (s *shardedLockCache) grow(node uint64) {
+	if node < uint64(len(s.cache)) {
 		return
 	}
-	n.maintenanceLock.Lock()
-	defer n.maintenanceLock.Unlock()
+	s.maintenanceLock.Lock()
+	defer s.maintenanceLock.Unlock()
 
-	n.obtainAllLocks()
-	defer n.releaseAllLocks()
+	s.obtainAllLocks()
+	defer s.releaseAllLocks()
 
 	newSize := node + minimumIndexGrowthDelta
-	n.cache.Resize(int(newSize))
-	//newLRUCache, err := lru.New(int(newSize))
-	//if err != nil {
-	//	return
-	//}
-	//
-	//// Copy data from the initial cache to the new cache
-	//keys := n.cache.Keys()
-	//for _, key := range keys {
-	//	if value, ok := n.cache.Get(key); ok {
-	//		newLRUCache.Add(key, value)
-	//	}
-	//}
-	//
-	//n.cache = newLRUCache
+	newCache := make([][]float32, newSize)
+	copy(newCache, s.cache)
+	atomic.StoreInt64(&s.count, int64(newSize))
+	s.cache = newCache
 }
 
 //nolint:unused
-func (n *shardedLockCache) len() int32 {
-	return int32(n.cache.Len())
+func (s *shardedLockCache) len() int32 {
+	return int32(len(s.cache))
 }
 
 //nolint:unused
-func (n *shardedLockCache) countVectors() int64 {
-	return atomic.LoadInt64(&n.count)
+func (s *shardedLockCache) countVectors() int64 {
+	return atomic.LoadInt64(&s.count)
 }
 
 //nolint:unused
-func (n *shardedLockCache) drop() {
-	n.deleteAllVectors()
-	n.cancel <- true
+func (s *shardedLockCache) drop() {
+	s.deleteAllVectors()
+	s.cancel <- true
 }
 
 //nolint:unused
-func (n *shardedLockCache) deleteAllVectors() {
-	n.obtainAllLocks()
-	defer n.releaseAllLocks()
+func (s *shardedLockCache) deleteAllVectors() {
+	s.obtainAllLocks()
+	defer s.releaseAllLocks()
 
-	n.logger.WithField("action", "hnsw_delete_vector_cache").
+	s.logger.WithField("action", "hnsw_delete_vector_cache").
 		Debug("deleting full vector cache")
-
-	keys := n.cache.Keys()
-	for _, key := range keys {
-		n.cache.Remove(key)
+	for i := range s.cache {
+		s.cache[i] = nil
 	}
 
-	atomic.StoreInt64(&n.count, 0)
+	atomic.StoreInt64(&s.count, 0)
 }
 
-func (c *shardedLockCache) watchForDeletion() {
+func (s *shardedLockCache) watchForDeletion() {
 	go func() {
-		t := time.NewTicker(c.deletionInterval)
+		t := time.NewTicker(s.deletionInterval)
 		defer t.Stop()
 		for {
 			select {
-			case <-c.cancel:
+			case <-s.cancel:
 				return
 			case <-t.C:
-				c.replaceIfFull()
+				s.replaceIfFull()
 			}
 		}
 	}()
 }
 
-func (c *shardedLockCache) replaceIfFull() {
-	if atomic.LoadInt64(&c.count) >= atomic.LoadInt64(&c.maxSize) {
-		c.maintenanceLock.Lock()
-		c.deleteAllVectors()
-		c.maintenanceLock.Unlock()
+func (s *shardedLockCache) replaceIfFull() {
+	if atomic.LoadInt64(&s.count) >= atomic.LoadInt64(&s.maxSize) {
+		s.maintenanceLock.Lock()
+		s.deleteAllVectors()
+		s.maintenanceLock.Unlock()
 	}
 }
 
-func (c *shardedLockCache) obtainAllLocks() {
+func (s *shardedLockCache) obtainAllLocks() {
 	wg := &sync.WaitGroup{}
 	for i := uint64(0); i < shardFactor; i++ {
 		wg.Add(1)
 		go func(index uint64) {
 			defer wg.Done()
-			c.shardedLocks[index].Lock()
+			s.shardedLocks[index].Lock()
 		}(i)
 	}
 
 	wg.Wait()
 }
 
-func (c *shardedLockCache) releaseAllLocks() {
+func (s *shardedLockCache) releaseAllLocks() {
 	for i := uint64(0); i < shardFactor; i++ {
-		c.shardedLocks[i].Unlock()
+		s.shardedLocks[i].Unlock()
 	}
 }
 
 //nolint:unused
-func (c *shardedLockCache) updateMaxSize(size int64) {
-	atomic.StoreInt64(&c.maxSize, size)
+func (s *shardedLockCache) updateMaxSize(size int64) {
+	atomic.StoreInt64(&s.maxSize, size)
 }
 
 //nolint:unused
-func (c *shardedLockCache) copyMaxSize() int64 {
-	sizeCopy := atomic.LoadInt64(&c.maxSize)
+func (s *shardedLockCache) copyMaxSize() int64 {
+	sizeCopy := atomic.LoadInt64(&s.maxSize)
 	return sizeCopy
 }
 

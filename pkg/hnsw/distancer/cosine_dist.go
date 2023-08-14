@@ -14,7 +14,6 @@ package distancer
 import (
 	"github.com/pkg/errors"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
-	"math"
 )
 
 type CosineDistance struct {
@@ -26,27 +25,9 @@ func (d *CosineDistance) Distance(b []float32) (float32, bool, error) {
 		return 0, false, errors.Errorf("vector lengths don't match: %d vs %d",
 			len(d.a), len(b))
 	}
-	d.a = normalizeVector(d.a)
-	b = normalizeVector(b)
+
 	dist := 1 - dotProductImplementation(d.a, b)
 	return dist, true, nil
-}
-
-func normalizeVector(vector []float32) []float32 {
-	norm := float32(0)
-
-	// Calculate the Euclidean norm
-	for _, val := range vector {
-		norm += val * val
-	}
-	norm = float32(math.Sqrt(float64(norm)))
-
-	// Normalize the vector
-	for i := range vector {
-		vector[i] /= norm
-	}
-
-	return vector
 }
 
 type CosineDistanceProvider struct{}
@@ -60,8 +41,7 @@ func (d CosineDistanceProvider) SingleDist(a, b []float32) (float32, bool, error
 		return 0, false, errors.Errorf("vector lengths don't match: %d vs %d",
 			len(a), len(b))
 	}
-	a = normalizeVector(a)
-	b = normalizeVector(b)
+
 	prod := 1 - dotProductImplementation(a, b)
 
 	return prod, true, nil

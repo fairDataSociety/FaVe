@@ -590,9 +590,13 @@ func (h *hnsw) isEmptyUnsecured() bool {
 }
 
 func (h *hnsw) nodeByID(id uint64) *vertex {
+	//_, file, no, ok := runtime.Caller(1)
+	//if ok {
+	//	fmt.Printf("called from %s#%d\n", file, no)
+	//}
 	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
 	if err != nil {
-		fmt.Println("nodeByID: could not get node", id, err)
+		fmt.Println("nodeByID: could not get node", id, h.className, err)
 		return nil
 	}
 	var v *vertex

@@ -242,10 +242,10 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 				//
 				// This was discovered as part of
 				// https://github.com/weaviate/weaviate/issues/1897
-				c := make([]uint64, 10)
+				c := make([]uint64, h.maximumConnections)
 				connections = &c
 			} else {
-				connections = h.pools.connList.Get(10)
+				connections = h.pools.connList.Get(h.maximumConnections)
 				defer h.pools.connList.Put(connections)
 			}
 			copy(*connections, candidateNode.Connections[level])
@@ -269,7 +269,6 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 						distance, ok, err = h.distanceToByteNode(byteDistancer, neighborID)
 					} else {
 						distance, ok, err = h.distanceToFloatNode(floatDistancer, neighborID)
-
 					}
 					if err != nil {
 						h.logger.Errorf("calculate distance between candidate and query: %v", err)
@@ -360,6 +359,7 @@ func (h *hnsw) insertViableEntrypointsAsCandidatesAndResults(
 func (h *hnsw) currentWorstResultDistanceToFloat(results *priorityqueue.Queue,
 	distancer distancer.Distancer,
 ) (float32, error) {
+
 	if results.Len() > 0 {
 		id := results.Top().ID
 		d, ok, err := h.distanceToFloatNode(distancer, id)

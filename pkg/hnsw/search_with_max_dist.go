@@ -13,6 +13,7 @@ package hnsw
 
 import (
 	"fmt"
+	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
 	"github.com/pkg/errors"
@@ -22,12 +23,17 @@ import (
 func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 	ef int, allowList helpers.AllowList,
 ) ([]uint64, []float32, error) {
+	if h.distancerProvider.Type() == "cosine-dot" {
+		// cosine-dot requires normalized vectors, as the dot product and cosine
+		// similarity are only identical if the vector is normalized
+		searchVec = distancer.Normalize(searchVec)
+	}
+
 	entryPointID := h.entryPointID
 	entryPointDistance, ok, err := h.distBetweenNodeAndVec(entryPointID, searchVec)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "knn search: distance between entrypoint and query node")
 	}
-
 	if !ok {
 		return nil, nil, fmt.Errorf("entrypoint was deleted in the object store, " +
 			"it has been flagged for cleanup and should be fixed in the next cleanup cycle")
@@ -64,7 +70,6 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 		all[i] = res.Pop()
 		i--
 	}
-
 	out := make([]uint64, len(all))
 	dists := make([]float32, len(all))
 	i = 0

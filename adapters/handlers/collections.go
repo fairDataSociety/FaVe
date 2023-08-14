@@ -15,7 +15,6 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 	if collectionRaw.Indexes == nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection should have at least one index"))
 	}
-
 	indexesRaw, ok := collectionRaw.Indexes.(map[string]interface{})
 	if !ok {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong indexes format"))
@@ -40,7 +39,6 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 		Name:    collectionRaw.Name,
 		Indexes: indexes,
 	}
-
 	err := s.doc.CreateCollection(col)
 	if err != nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Failed to create collection"))

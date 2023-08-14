@@ -50,8 +50,8 @@ type Collection struct {
 }
 
 type Document struct {
-	ID         string
-	Properties map[string]interface{}
+	ID         string                 `json:"id"`
+	Properties map[string]interface{} `json:"properties"`
 }
 
 func New(config Config, api *dfs.API) (*Client, error) {
@@ -229,7 +229,7 @@ func (c *Client) CreateCollection(col *Collection) error {
 	c.hnswLock.Lock()
 	c.indices[col.Name] = index
 	c.hnswLock.Unlock()
-	return ctx.Err()
+	return nil
 }
 
 func (c *Client) DeleteCollection(collection string) error {
@@ -339,7 +339,6 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 		// vectorize the properties
 		// add the vector in the properties before adding the document in the collection
 		vectorData := ""
-
 		for _, property := range propertiesToIndex {
 			dt, ok := doc.Properties[property]
 			if ok {
@@ -362,24 +361,19 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
-		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector.ToArray())
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err = index.Add(uint64(id), vector.ToArray())
-			if err != nil {
-				c.logger.Errorf("index.Add failed :%s\n", err.Error())
-				return
-			}
+		err = index.Add(uint64(id), vector.ToArray())
+		if err != nil {
+			c.logger.Errorf("index.Add failed :%s\n", err.Error())
+			continue
+		}
 
-		}()
+		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector.ToArray())
+
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
 			c.logger.Errorf("DocPut failed :%s\n", err.Error())
 			continue
 		}
-		wg.Wait()
 	}
 	return nil
 }
@@ -457,6 +451,7 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	if err != nil {
 		return nil, nil, err
 	}
+
 	documents := make([][]byte, len(ids))
 	wg := sync.WaitGroup{}
 	errCh := make(chan error, len(ids))
