@@ -354,20 +354,26 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 		doc.Properties["vector"] = vector.ToArray()
 
-		doc.Properties[hnswIndexName] = id
+		count, err := c.api.KVCount(c.sessionId, c.pod, collection)
+		if err != nil {
+			return err
+		}
+		indexId := count.Count + uint64(id)
+
+		doc.Properties[hnswIndexName] = indexId
 		doc.Properties["id"] = doc.ID
 		data, err := json.Marshal(doc.Properties)
 		if err != nil {
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
-		err = index.Add(uint64(id), vector.ToArray())
+		err = index.Add(indexId, vector.ToArray())
 		if err != nil {
 			c.logger.Errorf("index.Add failed :%s\n", err.Error())
 			continue
 		}
 
-		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector.ToArray())
+		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, indexId), vector.ToArray())
 
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {

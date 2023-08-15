@@ -538,8 +538,8 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 		}
 	}
 	// TODO this is a temp fix for panic
-	//return 0, 0
-	panic("findNewLocalEntrypoint called on an empty hnsw graph")
+	return 0, 0
+	//panic("findNewLocalEntrypoint called on an empty hnsw graph")
 }
 
 func (h *hnsw) isOnlyNode(needle *vertex, denyList helpers.AllowList) bool {

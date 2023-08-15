@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jdkato/prose/v2"
 	"github.com/sirupsen/logrus"
-	"log"
 	"os"
 	"strings"
 	"testing"
@@ -71,39 +70,11 @@ func TestFave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	documents := []*Document{}
-
-	// Print the records
-	for _, record := range records {
-		docTokens, err := prose.NewDocument(record[1])
-		if err != nil {
-			log.Fatal(err)
-		}
-		docTokens.Tokens()
-		tokens := []string{}
-		for _, tok := range docTokens.Tokens() {
-			if (tok.Tag == "NN" || tok.Tag == "NNP" || tok.Tag == "NNPS" || tok.Tag == "NNS") && len(tok.Text) > 2 {
-				tokens = append(tokens, tok.Text)
-			}
-		}
-		doc := &Document{
-			ID: uuid.New().String(),
-			Properties: map[string]interface{}{
-				"title":   record[0],
-				"rawText": strings.Join(tokens, " "),
-			},
-		}
-		fmt.Println("Adding:", doc.Properties["title"], "Raw Text: ", strings.Join(tokens, " "))
-		documents = append(documents, doc)
+	documents, err := generateDocuments(records)
+	if err != nil {
+		t.Fatal(err)
 	}
-	//jsonData, err := json.MarshalIndent(documents, "", "    ")
-	//if err != nil {
-	//	fmt.Println("Error marshaling JSON:", err)
-	//	return
-	//}
-	//
-	//// Print the indented JSON data
-	//fmt.Println(string(jsonData))
+
 	col := &Collection{
 		Name: "Wiki",
 		Indexes: map[string]collection.IndexType{
@@ -113,6 +84,17 @@ func TestFave(t *testing.T) {
 	}
 
 	err = client.CreateCollection(col)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// adding second time
+	documents, err = generateDocuments(records)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,38 +171,96 @@ func TestFave(t *testing.T) {
 	//	fmt.Println("=====================================")
 	//}
 
-	for _, record := range records {
-		fmt.Println("Searching for:", record[0])
-		// Test search
-		docs, _, err := client.GetNearDocuments(col.Name, record[0], 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(docs) == 0 {
-			t.Log("No documents found for", record[0])
-		} else {
-			props := map[string]interface{}{}
-			err := json.Unmarshal(docs[0], &props)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if props["title"] != record[0] {
-				t.Log("Found:", props["title"], "Expected:", record[0])
-			}
-		}
-
-		fmt.Println("=====================================")
-	}
-	//docs, dist, err := client.GetNearDocuments(col.Name, "Bat", 1)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//for i, doc := range docs {
-	//	props := map[string]interface{}{}
-	//	err := json.Unmarshal(doc, &props)
+	//for _, record := range records {
+	//	fmt.Println("Searching for:", record[0])
+	//	// Test search
+	//	docs, _, err := client.GetNearDocuments(col.Name, record[0], 1)
 	//	if err != nil {
 	//		t.Fatal(err)
 	//	}
-	//	fmt.Println("Found:", props["title"], dist[i])
+	//	if len(docs) == 0 {
+	//		t.Log("No documents found for", record[0])
+	//	} else {
+	//		props := map[string]interface{}{}
+	//		err := json.Unmarshal(docs[0], &props)
+	//		if err != nil {
+	//			t.Fatal(err)
+	//		}
+	//		if props["title"] != record[0] {
+	//			t.Log("Found:", props["title"], "Expected:", record[0])
+	//		}
+	//	}
+	//
+	//	fmt.Println("=====================================")
 	//}
+	docs, dist, err := client.GetNearDocuments(col.Name, "Bat", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, doc := range docs {
+		props := map[string]interface{}{}
+		err := json.Unmarshal(doc, &props)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("Found:", props["title"], dist[i])
+	}
+
+	fmt.Println("===================================== client2")
+	client2, err := New(cfg, dfsApi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client2.Login(username, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = client2.OpenPod("Fave")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	docs, dist, err = client2.GetNearDocuments(col.Name, "Bat", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, doc := range docs {
+		props := map[string]interface{}{}
+		err := json.Unmarshal(doc, &props)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("Found:", props["title"], dist[i])
+	}
+}
+
+func generateDocuments(records [][]string) ([]*Document, error) {
+	documents := []*Document{}
+
+	// Print the records
+	for _, record := range records {
+		docTokens, err := prose.NewDocument(record[1])
+		if err != nil {
+			return nil, err
+		}
+		docTokens.Tokens()
+		tokens := []string{}
+		for _, tok := range docTokens.Tokens() {
+			if (tok.Tag == "NN" || tok.Tag == "NNP" || tok.Tag == "NNPS" || tok.Tag == "NNS") && len(tok.Text) > 2 {
+				tokens = append(tokens, tok.Text)
+			}
+		}
+		doc := &Document{
+			ID: uuid.New().String(),
+			Properties: map[string]interface{}{
+				"title":   record[0],
+				"rawText": strings.Join(tokens, " "),
+			},
+		}
+		fmt.Println("Adding:", doc.Properties["title"], "Raw Text: ", strings.Join(tokens, " "))
+		documents = append(documents, doc)
+	}
+	return documents, nil
 }
