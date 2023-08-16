@@ -44,6 +44,9 @@ func NewFaveAPI(spec *loads.Document) *FaveAPI {
 
 		JSONProducer: runtime.JSONProducer(),
 
+		GetDocumentsHandler: GetDocumentsHandlerFunc(func(params GetDocumentsParams) middleware.Responder {
+			return middleware.NotImplemented("operation GetDocuments has not yet been implemented")
+		}),
 		FaveAddDocumentsHandler: FaveAddDocumentsHandlerFunc(func(params FaveAddDocumentsParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveAddDocuments has not yet been implemented")
 		}),
@@ -98,6 +101,8 @@ type FaveAPI struct {
 	//   - application/json
 	JSONProducer runtime.Producer
 
+	// GetDocumentsHandler sets the operation handler for the get documents operation
+	GetDocumentsHandler GetDocumentsHandler
 	// FaveAddDocumentsHandler sets the operation handler for the fave add documents operation
 	FaveAddDocumentsHandler FaveAddDocumentsHandler
 	// FaveCreateCollectionHandler sets the operation handler for the fave create collection operation
@@ -188,6 +193,9 @@ func (o *FaveAPI) Validate() error {
 		unregistered = append(unregistered, "JSONProducer")
 	}
 
+	if o.GetDocumentsHandler == nil {
+		unregistered = append(unregistered, "GetDocumentsHandler")
+	}
 	if o.FaveAddDocumentsHandler == nil {
 		unregistered = append(unregistered, "FaveAddDocumentsHandler")
 	}
@@ -293,6 +301,10 @@ func (o *FaveAPI) initHandlerCache() {
 		o.handlers = make(map[string]map[string]http.Handler)
 	}
 
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/documents"] = NewGetDocuments(o.context, o.GetDocumentsHandler)
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
