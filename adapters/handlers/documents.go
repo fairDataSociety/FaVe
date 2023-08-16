@@ -77,3 +77,33 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 		Name:      req.Name,
 	})
 }
+
+func (s *Handler) GetDocumentsHandlerFunc(request operations.GetDocumentsParams) middleware.Responder {
+
+	if request.Property == "" {
+		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Property cannot be blank"))
+	}
+	if request.Value == "" {
+		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Value cannot be blank"))
+	}
+	if request.Collection == "" {
+		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Collection cannot be blank"))
+	}
+	documentRaw, err := s.doc.GetDocument(request.Collection, request.Property, request.Value)
+	if err != nil {
+		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))
+	}
+	props := map[string]interface{}{}
+	err = json.Unmarshal(documentRaw, &props)
+	if err != nil {
+		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))
+	}
+	d := &models.Document{
+		ID: strfmt.UUID(fmt.Sprintf("%s", props["id"])),
+	}
+	delete(props, "id")
+	delete(props, "vector")
+	d.Properties = props
+
+	return operations.NewGetDocumentsOK().WithPayload(d)
+}

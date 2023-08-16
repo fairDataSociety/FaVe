@@ -345,35 +345,39 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				vectorData += dt.(string) + " "
 			}
 		}
-
-		vector, err := c.lookup.Corpi([]string{vectorData})
-		if err != nil {
-			c.logger.Errorf("corpi failed :%s\n", err.Error())
-			continue
-		}
-
-		doc.Properties["vector"] = vector.ToArray()
-
-		count, err := c.api.KVCount(c.sessionId, c.pod, collection)
-		if err != nil {
-			return err
-		}
-		indexId := count.Count + uint64(id)
-
-		doc.Properties[hnswIndexName] = indexId
 		doc.Properties["id"] = doc.ID
+
+		if vectorData != "" {
+			vector, err := c.lookup.Corpi([]string{vectorData})
+			if err != nil {
+				c.logger.Errorf("corpi failed :%s\n", err.Error())
+				continue
+			}
+
+			doc.Properties["vector"] = vector.ToArray()
+
+			count, err := c.api.KVCount(c.sessionId, c.pod, collection)
+			if err != nil {
+				return err
+			}
+			indexId := count.Count + uint64(id)
+
+			doc.Properties[hnswIndexName] = indexId
+
+			err = index.Add(indexId, vector.ToArray())
+			if err != nil {
+				c.logger.Errorf("index.Add failed :%s\n", err.Error())
+				continue
+			}
+
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, indexId), vector.ToArray())
+		}
+
 		data, err := json.Marshal(doc.Properties)
 		if err != nil {
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
-		err = index.Add(indexId, vector.ToArray())
-		if err != nil {
-			c.logger.Errorf("index.Add failed :%s\n", err.Error())
-			continue
-		}
-
-		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, indexId), vector.ToArray())
 
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
@@ -485,6 +489,30 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 
 	return documents, dists, nil
 }
+
+func (c *Client) GetDocument(collection, property, value string) ([]byte, error) {
+	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, collection)
+	if err != nil {
+		return nil, err
+	}
+	if !docIsOpen {
+		err = c.api.DocOpen(c.sessionId, c.pod, collection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	expr := fmt.Sprintf("%s=%s", property, value)
+	docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(docs) == 0 {
+		return nil, fmt.Errorf("document not found")
+	}
+	return docs[0], nil
+}
+
 func convertToFloat32Slice(i interface{}) ([]float32, error) {
 	// Check if the underlying value is a slice
 	if slice, ok := i.([]interface{}); ok {

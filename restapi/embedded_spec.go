@@ -150,6 +150,49 @@ func init() {
       }
     },
     "/documents": {
+      "get": {
+        "summary": "Retrieve a document based on query parameters",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The property to filter the document by",
+            "name": "property",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The value of the property to filter the document by",
+            "name": "value",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The collection to use for this query",
+            "name": "collection",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        }
+      },
       "post": {
         "description": "Add documents into a collection.",
         "operationId": "fave.addDocuments",
@@ -513,6 +556,49 @@ func init() {
       }
     },
     "/documents": {
+      "get": {
+        "summary": "Retrieve a document based on query parameters",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The property to filter the document by",
+            "name": "property",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The value of the property to filter the document by",
+            "name": "value",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The collection to use for this query",
+            "name": "collection",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        }
+      },
       "post": {
         "description": "Add documents into a collection.",
         "operationId": "fave.addDocuments",
