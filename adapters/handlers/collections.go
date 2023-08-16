@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/fairDataSociety/FaVe/pkg/document"
 	"github.com/fairDataSociety/FaVe/restapi/operations"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
@@ -36,7 +35,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 			return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong indexes type"))
 		}
 	}
-	fmt.Println(indexes)
+
 	col := &document.Collection{
 		Name:    collectionRaw.Name,
 		Indexes: indexes,
