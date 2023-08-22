@@ -91,6 +91,7 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 	if err != nil {
 		return errors.Wrapf(err, "marshal node %d", node.Id)
 	}
+	h.indexCache.Add(node.Id, node)
 	err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
 	if err != nil {
 		return errors.Wrapf(err, "put node %d", node.Id)
@@ -182,6 +183,8 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 	if err != nil {
 		return errors.Wrapf(err, "marshal node %d", node.Id)
 	}
+	h.indexCache.Add(node.Id, node)
+
 	err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
 	if err != nil {
 		return errors.Wrapf(err, "put node %d", node.Id)

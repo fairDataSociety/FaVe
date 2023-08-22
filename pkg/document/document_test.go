@@ -56,7 +56,7 @@ func TestFave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	file, err := os.Open("./wiki-15.csv")
+	file, err := os.Open("./wiki-100.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,16 +93,16 @@ func TestFave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// adding second time
-	documents, err = generateDocuments(records)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents...)
-	if err != nil {
-		t.Fatal(err)
-	}
+	//// adding second time
+	//documents, err = generateDocuments(records)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents...)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
 
 	//for i, _ := range documents {
 	//	s, v, err := dfsApi.KVGet(client.sessionId, client.pod, col.Name, fmt.Sprintf("%d", i))

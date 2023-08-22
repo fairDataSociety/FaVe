@@ -360,17 +360,18 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			if err != nil {
 				return err
 			}
-			indexId := count.Count + uint64(id)
 
-			doc.Properties[hnswIndexName] = indexId
+			doc.Properties[hnswIndexName] = count.Count + 1
 
-			err = index.Add(indexId, vector.ToArray())
+			err = index.Add(count.Count, vector.ToArray())
 			if err != nil {
 				c.logger.Errorf("index.Add failed :%s\n", err.Error())
 				continue
 			}
 
-			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, indexId), vector.ToArray())
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, count.Count), vector.ToArray())
+		} else {
+			doc.Properties[hnswIndexName] = 0
 		}
 
 		data, err := json.Marshal(doc.Properties)
@@ -381,9 +382,10 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
-			c.logger.Errorf("DocPut failed :%s\n", err.Error())
-			continue
+			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error(), doc.Properties)
+			return err
 		}
+		fmt.Println("added document", id, doc.Properties["title"])
 	}
 	return nil
 }
@@ -502,7 +504,10 @@ func (c *Client) GetDocument(collection, property, value string) ([]byte, error)
 		}
 	}
 
-	expr := fmt.Sprintf("%s=%s", property, value)
+	expr := ""
+	if property != "" && value != "" {
+		expr = fmt.Sprintf("%s=%s", property, value)
+	}
 	docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
 	if err != nil {
 		return nil, err

@@ -80,12 +80,6 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 
 func (s *Handler) GetDocumentsHandlerFunc(request operations.GetDocumentsParams) middleware.Responder {
 
-	if request.Property == "" {
-		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Property cannot be blank"))
-	}
-	if request.Value == "" {
-		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Value cannot be blank"))
-	}
 	if request.Collection == "" {
 		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Collection cannot be blank"))
 	}

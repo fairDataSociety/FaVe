@@ -71,6 +71,7 @@ func (n *neighborFinderConnector) Do() error {
 	if err != nil {
 		return errors.Wrapf(err, "marshal node %d", n.node.Id)
 	}
+	n.graph.indexCache.Add(n.node.Id, n.node)
 
 	return n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
 }
@@ -165,6 +166,7 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 		if err != nil {
 			return errors.Wrapf(err, "marshal node %d", neighbor.Id)
 		}
+		n.graph.indexCache.Add(n.node.Id, neighbor)
 		err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
 		if err != nil {
 			return errors.Wrapf(err, "marshal node %d", neighbor.Id)
@@ -220,6 +222,7 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 			if err != nil {
 				return errors.Wrapf(err, "marshal node %d", neighbor.Id)
 			}
+			n.graph.indexCache.Add(n.node.Id, neighbor)
 			err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
 			if err != nil {
 				return errors.Wrapf(err, "marshal node %d", neighbor.Id)

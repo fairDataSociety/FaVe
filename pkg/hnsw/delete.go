@@ -235,15 +235,29 @@ func (h *hnsw) replaceDeletedEntrypoint(deleteList helpers.AllowList, breakClean
 			// 2. there is a risk that this is the only node in the entire graph. In
 			// this case we must reset the graph
 			h.RLock()
-			_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
-			if err != nil {
-				return false, err
+			var (
+				value []byte
+				node  *vertex
+				err   error
+			)
+			val, ok := h.indexCache.Get(id)
+			if ok {
+				node, ok = val.(*vertex)
+				if !ok {
+					// Now vertexValue is a pointer to the cached vertex object
+					return false, fmt.Errorf("failed to get vertex")
+				}
+			} else {
+				_, value, err = h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
+				if err != nil {
+					return false, err
+				}
+				err = json.Unmarshal(value, &node)
+				if err != nil {
+					return false, err
+				}
 			}
-			var node *vertex
-			err = json.Unmarshal(value, &node)
-			if err != nil {
-				return false, err
-			}
+
 			h.RUnlock()
 			if err := h.deleteEntrypoint(node, deleteList); err != nil {
 				return false, errors.Wrap(err, "delete entrypoint")
