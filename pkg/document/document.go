@@ -125,6 +125,7 @@ func (c *Client) OpenPod(pod string) error {
 		return err
 	}
 	c.podInfo = pi
+
 	return nil
 }
 
@@ -353,7 +354,6 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				c.logger.Errorf("corpi failed :%s\n", err.Error())
 				continue
 			}
-
 			doc.Properties["vector"] = vector.ToArray()
 
 			count, err := c.api.KVCount(c.sessionId, c.pod, collection)
@@ -361,7 +361,7 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				return err
 			}
 
-			doc.Properties[hnswIndexName] = count.Count + 1
+			doc.Properties[hnswIndexName] = count.Count
 
 			err = index.Add(count.Count, vector.ToArray())
 			if err != nil {
@@ -371,7 +371,7 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, count.Count), vector.ToArray())
 		} else {
-			doc.Properties[hnswIndexName] = 0
+			doc.Properties[hnswIndexName] = -1
 		}
 
 		data, err := json.Marshal(doc.Properties)
@@ -418,6 +418,9 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 			err = json.Unmarshal(doc, &data)
 			if err != nil {
 				return nil, err
+			}
+			if data["vector"] == nil {
+				return nil, fmt.Errorf("vector is nil")
 			}
 			vector, err := convertToFloat32Slice(data["vector"])
 			if err != nil {
