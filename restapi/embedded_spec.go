@@ -151,7 +151,8 @@ func init() {
     },
     "/documents": {
       "get": {
-        "summary": "Retrieve a document based on query parameters",
+        "description": "Retrieve a document based on query parameters",
+        "operationId": "fave.getDocuments",
         "parameters": [
           {
             "type": "string",
@@ -311,8 +312,8 @@ func init() {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
         },
-        "propertiesToIndex": {
-          "description": "Array of properties to be indexed.",
+        "propertiesToVectorize": {
+          "description": "Array of property names to be vectorized.",
           "type": "array",
           "items": {
             "type": "string"
@@ -324,11 +325,14 @@ func init() {
       "type": "object",
       "properties": {
         "indexes": {
-          "description": "The indexes of the collection.",
-          "type": "object"
+          "description": "The indexes of the collection for fairOS-dfs document store.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Index"
+          }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -342,7 +346,7 @@ func init() {
           "format": "uuid"
         },
         "properties": {
-          "$ref": "#/definitions/PropertySchema"
+          "$ref": "#/definitions/Property"
         }
       }
     },
@@ -363,6 +367,20 @@ func init() {
         }
       }
     },
+    "Index": {
+      "description": "This is an object for specifying which fields to index in fairOS document store while Collection creation",
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "description": "The filed name to index",
+          "type": "string"
+        },
+        "fieldType": {
+          "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
+          "type": "string"
+        }
+      }
+    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -370,6 +388,10 @@ func init() {
         "distance": {
           "type": "number",
           "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
         },
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
@@ -407,7 +429,7 @@ func init() {
         }
       }
     },
-    "PropertySchema": {
+    "Property": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
@@ -557,7 +579,8 @@ func init() {
     },
     "/documents": {
       "get": {
-        "summary": "Retrieve a document based on query parameters",
+        "description": "Retrieve a document based on query parameters",
+        "operationId": "fave.getDocuments",
         "parameters": [
           {
             "type": "string",
@@ -717,8 +740,8 @@ func init() {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
         },
-        "propertiesToIndex": {
-          "description": "Array of properties to be indexed.",
+        "propertiesToVectorize": {
+          "description": "Array of property names to be vectorized.",
           "type": "array",
           "items": {
             "type": "string"
@@ -730,11 +753,14 @@ func init() {
       "type": "object",
       "properties": {
         "indexes": {
-          "description": "The indexes of the collection.",
-          "type": "object"
+          "description": "The indexes of the collection for fairOS-dfs document store.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Index"
+          }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -748,7 +774,7 @@ func init() {
           "format": "uuid"
         },
         "properties": {
-          "$ref": "#/definitions/PropertySchema"
+          "$ref": "#/definitions/Property"
         }
       }
     },
@@ -772,6 +798,20 @@ func init() {
         }
       }
     },
+    "Index": {
+      "description": "This is an object for specifying which fields to index in fairOS document store while Collection creation",
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "description": "The filed name to index",
+          "type": "string"
+        },
+        "fieldType": {
+          "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
+          "type": "string"
+        }
+      }
+    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -779,6 +819,10 @@ func init() {
         "distance": {
           "type": "number",
           "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
         },
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
@@ -816,7 +860,7 @@ func init() {
         }
       }
     },
-    "PropertySchema": {
+    "Property": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true

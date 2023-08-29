@@ -7,7 +7,9 @@ package models
 
 import (
 	"context"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
@@ -17,20 +19,84 @@ import (
 // swagger:model Collection
 type Collection struct {
 
-	// The indexes of the collection.
-	Indexes interface{} `json:"indexes,omitempty" yaml:"indexes,omitempty"`
+	// The indexes of the collection for fairOS-dfs document store.
+	Indexes []*Index `json:"indexes" yaml:"indexes"`
 
-	// Name of the collection as URI relative to the schema URL.
+	// Name of the collection
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 }
 
 // Validate validates this collection
 func (m *Collection) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateIndexes(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
 	return nil
 }
 
-// ContextValidate validates this collection based on context it is used
+func (m *Collection) validateIndexes(formats strfmt.Registry) error {
+	if swag.IsZero(m.Indexes) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.Indexes); i++ {
+		if swag.IsZero(m.Indexes[i]) { // not required
+			continue
+		}
+
+		if m.Indexes[i] != nil {
+			if err := m.Indexes[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("indexes" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("indexes" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// ContextValidate validate this collection based on the context it is used
 func (m *Collection) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateIndexes(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *Collection) contextValidateIndexes(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(m.Indexes); i++ {
+
+		if m.Indexes[i] != nil {
+			if err := m.Indexes[i].ContextValidate(ctx, formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("indexes" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("indexes" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

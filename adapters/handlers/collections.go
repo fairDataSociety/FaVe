@@ -15,24 +15,21 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 	if collectionRaw.Indexes == nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection should have at least one index"))
 	}
-	indexesRaw, ok := collectionRaw.Indexes.(map[string]interface{})
-	if !ok {
-		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong indexes format"))
-	}
+
 	indexes := make(map[string]collection.IndexType)
-	for k, v := range indexesRaw {
-		switch v {
+	for _, v := range collectionRaw.Indexes {
+		switch v.FieldType {
 		case "string":
-			indexes[k] = collection.StringIndex
+			indexes[v.FieldName] = collection.StringIndex
 		case "number":
-			indexes[k] = collection.NumberIndex
+			indexes[v.FieldName] = collection.NumberIndex
 		case "map":
-			indexes[k] = collection.MapIndex
+			indexes[v.FieldName] = collection.MapIndex
 		case "list":
-			indexes[k] = collection.ListIndex
+			indexes[v.FieldName] = collection.ListIndex
 		case "bytes":
 		default:
-			return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong indexes type"))
+			return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong index type"))
 		}
 	}
 

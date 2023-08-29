@@ -18,8 +18,8 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 	if documentsRaw.Documents == nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Request should have at least one document"))
 	}
-	if documentsRaw.PropertiesToIndex == nil {
-		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Properties to index cannot be blank"))
+	if documentsRaw.PropertiesToVectorize == nil {
+		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Properties to vectorize cannot be blank"))
 	}
 	documents := make([]*document.Document, len(documentsRaw.Documents))
 
@@ -35,9 +35,9 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 		documents[i] = d
 	}
 
-	err := s.doc.AddDocuments(documentsRaw.Name, documentsRaw.PropertiesToIndex, documents...)
+	err := s.doc.AddDocuments(documentsRaw.Name, documentsRaw.PropertiesToVectorize, documents...)
 	if err != nil {
-		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to create add documents"))
+		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject([]string{"Failed to add documents", err.Error()}...))
 	}
 	return operations.NewFaveAddDocumentsOK().WithPayload(createOKResponseObject(fmt.Sprintf("Added %d documents", len(documents))))
 }
@@ -50,7 +50,7 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 	if req.Text == "" {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Search text should not be blank"))
 	}
-	documentsRaw, dists, err := s.doc.GetNearDocuments(req.Name, req.Text, req.Distance)
+	documentsRaw, dists, err := s.doc.GetNearDocuments(req.Name, req.Text, req.Distance, int(req.Limit))
 	if err != nil {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))
 	}
@@ -78,7 +78,7 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 	})
 }
 
-func (s *Handler) GetDocumentsHandlerFunc(request operations.GetDocumentsParams) middleware.Responder {
+func (s *Handler) GetDocumentsHandlerFunc(request operations.FaveGetDocumentsParams) middleware.Responder {
 
 	if request.Collection == "" {
 		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Collection cannot be blank"))

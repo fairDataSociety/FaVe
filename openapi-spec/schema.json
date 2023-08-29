@@ -34,17 +34,34 @@
     "Collection": {
       "properties": {
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "indexes": {
-          "description": "The indexes of the collection.",
-          "type": "object"
+          "description": "The indexes of the collection for fairOS-dfs document store.",
+          "items": {
+            "$ref": "#/definitions/Index"
+          },
+          "type": "array"
         }
       },
       "type": "object"
     },
-    "PropertySchema": {
+    "Index": {
+      "description": "This is an object for specifying which fields to index in fairOS document store while Collection creation",
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "description": "The filed name to index",
+          "type": "string"
+        },
+        "fieldType": {
+          "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
+          "type": "string"
+        }
+      }
+    },
+    "Property": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
@@ -52,7 +69,7 @@
     "Document": {
       "properties": {
         "properties": {
-          "$ref": "#/definitions/PropertySchema"
+          "$ref": "#/definitions/Property"
         },
         "id": {
           "description": "ID of the Object.",
@@ -76,8 +93,8 @@
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
         },
-        "propertiesToIndex": {
-          "description": "Array of properties to be indexed.",
+        "propertiesToVectorize": {
+          "description": "Array of property names to be vectorized.",
           "type": "array",
           "items": {
             "type": "string"
@@ -100,6 +117,10 @@
         "distance": {
           "type": "number",
           "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
         }
       },
       "type": "object"
@@ -250,7 +271,8 @@
     },
     "/documents": {
       "get": {
-        "summary": "Retrieve a document based on query parameters",
+        "description": "Retrieve a document based on query parameters",
+        "operationId": "fave.getDocuments",
         "parameters": [
           {
             "name": "property",

@@ -193,7 +193,7 @@ func TestFave(t *testing.T) {
 	//
 	//	fmt.Println("=====================================")
 	//}
-	docs, dist, err := client.GetNearDocuments(col.Name, "Bat", 1)
+	docs, dist, err := client.GetNearDocuments(col.Name, "Bat", 1, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestFave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	docs, dist, err = client2.GetNearDocuments(col.Name, "Bat", 1)
+	docs, dist, err = client2.GetNearDocuments(col.Name, "Bat", 1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

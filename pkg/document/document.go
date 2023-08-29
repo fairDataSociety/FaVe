@@ -126,6 +126,19 @@ func (c *Client) OpenPod(pod string) error {
 	}
 	c.podInfo = pi
 
+	//docs, _ := c.api.DocList(c.sessionId, c.pod)
+	//fmt.Println("docs", docs)
+	//for _, doc := range docs {
+	//	err = c.api.DocDelete(c.sessionId, c.pod, doc.Name)
+	//	fmt.Println("delete doc", doc.Name, err)
+	//}
+	//
+	//kvs, _ := c.api.KVList(c.sessionId, c.pod)
+	//fmt.Println("kvs", kvs)
+	//for kv, _ := range kvs {
+	//	err = c.api.KVDelete(c.sessionId, c.pod, kv)
+	//	fmt.Println("delete kv", kv, err)
+	//}
 	return nil
 }
 
@@ -152,6 +165,9 @@ func (c *Client) CreateCollection(col *Collection) error {
 		docs, err := c.api.DocFind(c.sessionId, c.pod, col.Name, expr, 1)
 		if err != nil {
 			return nil, err
+		}
+		if len(docs) == 0 {
+			return nil, fmt.Errorf("document not found")
 		}
 		doc := docs[0]
 		data := map[string]interface{}{}
@@ -390,7 +406,7 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 	return nil
 }
 
-func (c *Client) GetNearDocuments(collection, text string, distance float32) ([][]byte, []float32, error) {
+func (c *Client) GetNearDocuments(collection, text string, distance float32, limit int) ([][]byte, []float32, error) {
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(collection)
 	if err != nil {
@@ -465,6 +481,11 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if limit != 0 && len(ids) > limit {
+		ids = ids[:limit]
+		dists = dists[:limit]
 	}
 
 	documents := make([][]byte, len(ids))
