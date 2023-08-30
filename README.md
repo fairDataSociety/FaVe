@@ -102,4 +102,8 @@ go generate
 
 Vectorizer is a service that vectorizes the words in a given text. 
 
-Currently, the only supported vectorizer is GloVe put inside leveldb (https://github.com/onepeerlabs/glove-840B-leveldb). It uses GloVe word embeddings to vectorize the words.
+Currently, the only supported vectorizer is GloVe put inside leveldb (https://github.com/onepeerlabs/glove-840B-leveldb). 
+It uses GloVe word embeddings to vectorize the words.
+
+We can use any other pretrained word embeddings to vectorize the words. We just need to put the embeddings in a leveldb 
+and use this script https://github.com/onepeerlabs/glove-840B-leveldb/tree/master/cmd/csvToLeveldb to convert the embeddings to leveldb.

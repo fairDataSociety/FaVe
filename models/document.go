@@ -24,7 +24,7 @@ type Document struct {
 	ID strfmt.UUID `json:"id,omitempty" yaml:"id,omitempty"`
 
 	// properties
-	Properties PropertySchema `json:"properties,omitempty" yaml:"properties,omitempty"`
+	Properties Property `json:"properties,omitempty" yaml:"properties,omitempty"`
 }
 
 // Validate validates this document

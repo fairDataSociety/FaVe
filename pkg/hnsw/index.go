@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"io"
 	"math"
 	"math/rand"
@@ -154,6 +155,8 @@ type hnsw struct {
 	compressActionLock     *sync.RWMutex
 	className              string
 	shardName              string
+
+	indexCache *lru.Cache
 }
 
 type CommitLogger interface {
@@ -208,7 +211,10 @@ func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error)
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid config")
 	}
-
+	indexCache, err := lru.New(10000)
+	if err != nil {
+		return nil, err
+	}
 	if cfg.Logger == nil {
 		logger := logrus.New()
 		logger.Out = io.Discard
@@ -264,6 +270,8 @@ func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error)
 		randFunc:           rand.Float64,
 		compressActionLock: &sync.RWMutex{},
 		className:          cfg.ClassName,
+
+		indexCache: indexCache,
 	}
 
 	index.tombstoneCleanupCycle = cyclemanager.New(
@@ -590,18 +598,33 @@ func (h *hnsw) isEmptyUnsecured() bool {
 }
 
 func (h *hnsw) nodeByID(id uint64) *vertex {
-	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
-	if err != nil {
-		fmt.Println("nodeByID: could not get node", id, err)
-		return nil
+	var (
+		value []byte
+		v     *vertex
+		err   error
+	)
+	val, ok := h.indexCache.Get(id)
+	if ok {
+		if vertexValue, ok := val.(*vertex); ok {
+			// Now vertexValue is a pointer to the cached vertex object
+			return vertexValue
+		} else {
+			fmt.Println("Value is not a vertex.")
+			return nil
+		}
+	} else {
+		_, value, err = h.nodes.KVGet(h.className, fmt.Sprintf("%d", id))
+		if err != nil {
+			fmt.Println("nodeByID: could not get node", id, h.className, err)
+			return nil
+		}
+		err = json.Unmarshal(value, &v)
+		if err != nil {
+			fmt.Println("nodeByID: could not Unmarshal node", err)
+			return nil
+		}
+		return v
 	}
-	var v *vertex
-	err = json.Unmarshal(value, &v)
-	if err != nil {
-		fmt.Println("nodeByID: could not Unmarshal node", err)
-		return nil
-	}
-	return v
 }
 
 func (h *hnsw) Drop(ctx context.Context) error {

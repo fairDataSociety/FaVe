@@ -53,6 +53,9 @@ func NewFaveAPI(spec *loads.Document) *FaveAPI {
 		FaveDeleteCollectionHandler: FaveDeleteCollectionHandlerFunc(func(params FaveDeleteCollectionParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveDeleteCollection has not yet been implemented")
 		}),
+		FaveGetDocumentsHandler: FaveGetDocumentsHandlerFunc(func(params FaveGetDocumentsParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveGetDocuments has not yet been implemented")
+		}),
 		FaveGetNearestDocumentsHandler: FaveGetNearestDocumentsHandlerFunc(func(params FaveGetNearestDocumentsParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveGetNearestDocuments has not yet been implemented")
 		}),
@@ -104,6 +107,8 @@ type FaveAPI struct {
 	FaveCreateCollectionHandler FaveCreateCollectionHandler
 	// FaveDeleteCollectionHandler sets the operation handler for the fave delete collection operation
 	FaveDeleteCollectionHandler FaveDeleteCollectionHandler
+	// FaveGetDocumentsHandler sets the operation handler for the fave get documents operation
+	FaveGetDocumentsHandler FaveGetDocumentsHandler
 	// FaveGetNearestDocumentsHandler sets the operation handler for the fave get nearest documents operation
 	FaveGetNearestDocumentsHandler FaveGetNearestDocumentsHandler
 	// FaveRootHandler sets the operation handler for the fave root operation
@@ -196,6 +201,9 @@ func (o *FaveAPI) Validate() error {
 	}
 	if o.FaveDeleteCollectionHandler == nil {
 		unregistered = append(unregistered, "FaveDeleteCollectionHandler")
+	}
+	if o.FaveGetDocumentsHandler == nil {
+		unregistered = append(unregistered, "FaveGetDocumentsHandler")
 	}
 	if o.FaveGetNearestDocumentsHandler == nil {
 		unregistered = append(unregistered, "FaveGetNearestDocumentsHandler")
@@ -305,6 +313,10 @@ func (o *FaveAPI) initHandlerCache() {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
 	}
 	o.handlers["DELETE"]["/collections/{collection}"] = NewFaveDeleteCollection(o.context, o.FaveDeleteCollectionHandler)
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/documents"] = NewFaveGetDocuments(o.context, o.FaveGetDocumentsHandler)
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}

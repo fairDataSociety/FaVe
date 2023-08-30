@@ -50,8 +50,8 @@ type Collection struct {
 }
 
 type Document struct {
-	ID         string
-	Properties map[string]interface{}
+	ID         string                 `json:"id"`
+	Properties map[string]interface{} `json:"properties"`
 }
 
 func New(config Config, api *dfs.API) (*Client, error) {
@@ -125,6 +125,20 @@ func (c *Client) OpenPod(pod string) error {
 		return err
 	}
 	c.podInfo = pi
+
+	//docs, _ := c.api.DocList(c.sessionId, c.pod)
+	//fmt.Println("docs", docs)
+	//for _, doc := range docs {
+	//	err = c.api.DocDelete(c.sessionId, c.pod, doc.Name)
+	//	fmt.Println("delete doc", doc.Name, err)
+	//}
+	//
+	//kvs, _ := c.api.KVList(c.sessionId, c.pod)
+	//fmt.Println("kvs", kvs)
+	//for kv, _ := range kvs {
+	//	err = c.api.KVDelete(c.sessionId, c.pod, kv)
+	//	fmt.Println("delete kv", kv, err)
+	//}
 	return nil
 }
 
@@ -151,6 +165,9 @@ func (c *Client) CreateCollection(col *Collection) error {
 		docs, err := c.api.DocFind(c.sessionId, c.pod, col.Name, expr, 1)
 		if err != nil {
 			return nil, err
+		}
+		if len(docs) == 0 {
+			return nil, fmt.Errorf("document not found")
 		}
 		doc := docs[0]
 		data := map[string]interface{}{}
@@ -229,7 +246,7 @@ func (c *Client) CreateCollection(col *Collection) error {
 	c.hnswLock.Lock()
 	c.indices[col.Name] = index
 	c.hnswLock.Unlock()
-	return ctx.Err()
+	return nil
 }
 
 func (c *Client) DeleteCollection(collection string) error {
@@ -268,7 +285,7 @@ func (c *Client) DeleteCollection(collection string) error {
 	return nil
 }
 
-func (c *Client) AddDocuments(collection string, documents ...*Document) error {
+func (c *Client) AddDocuments(collection string, propertiesToIndex []string, documents ...*Document) error {
 	// check if kv and doc table is open or not
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(collection)
@@ -336,51 +353,60 @@ func (c *Client) AddDocuments(collection string, documents ...*Document) error {
 	index := c.indices[collection]
 	c.hnswLock.Unlock()
 	for id, doc := range documents {
-		// vectorise the properties
+		// vectorize the properties
 		// add the vector in the properties before adding the document in the collection
 		vectorData := ""
-		for _, prop := range doc.Properties {
-			vectorData += prop.(string) + " "
+		for _, property := range propertiesToIndex {
+			dt, ok := doc.Properties[property]
+			if ok {
+				vectorData += dt.(string) + " "
+			}
 		}
-		fmt.Println(vectorData)
-		vector, err := c.lookup.Corpi([]string{vectorData})
-		if err != nil {
-			c.logger.Errorf("corpi failed :%s\n", err.Error())
-			continue
-		}
-
-		doc.Properties["vector"] = vector.ToArray()
-
-		doc.Properties[hnswIndexName] = id
 		doc.Properties["id"] = doc.ID
+
+		if vectorData != "" {
+			vector, err := c.lookup.Corpi([]string{vectorData})
+			if err != nil {
+				c.logger.Errorf("corpi failed :%s\n", err.Error())
+				continue
+			}
+			doc.Properties["vector"] = vector.ToArray()
+
+			count, err := c.api.KVCount(c.sessionId, c.pod, collection)
+			if err != nil {
+				return err
+			}
+
+			doc.Properties[hnswIndexName] = count.Count
+
+			err = index.Add(count.Count, vector.ToArray())
+			if err != nil {
+				c.logger.Errorf("index.Add failed :%s\n", err.Error())
+				continue
+			}
+
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, count.Count), vector.ToArray())
+		} else {
+			doc.Properties[hnswIndexName] = -1
+		}
+
 		data, err := json.Marshal(doc.Properties)
 		if err != nil {
 			c.logger.Errorf("marshal document failed :%s\n", err.Error())
 			continue
 		}
-		c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, collection, id), vector.ToArray())
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err = index.Add(uint64(id), vector.ToArray())
-			if err != nil {
-				c.logger.Errorf("index.Add failed :%s\n", err.Error())
-				return
-			}
 
-		}()
 		err = c.api.DocPut(c.sessionId, c.pod, collection, data)
 		if err != nil {
-			c.logger.Errorf("DocPut failed :%s\n", err.Error())
-			continue
+			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error(), doc.Properties)
+			return err
 		}
-		wg.Wait()
+		fmt.Println("added document", id, doc.Properties["title"])
 	}
 	return nil
 }
 
-func (c *Client) GetNearDocuments(collection, text string, distance float32) ([][]byte, []float32, error) {
+func (c *Client) GetNearDocuments(collection, text string, distance float32, limit int) ([][]byte, []float32, error) {
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(collection)
 	if err != nil {
@@ -408,6 +434,9 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 			err = json.Unmarshal(doc, &data)
 			if err != nil {
 				return nil, err
+			}
+			if data["vector"] == nil {
+				return nil, fmt.Errorf("vector is nil")
 			}
 			vector, err := convertToFloat32Slice(data["vector"])
 			if err != nil {
@@ -453,6 +482,12 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if limit != 0 && len(ids) > limit {
+		ids = ids[:limit]
+		dists = dists[:limit]
+	}
+
 	documents := make([][]byte, len(ids))
 	wg := sync.WaitGroup{}
 	errCh := make(chan error, len(ids))
@@ -480,6 +515,33 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32) ([]
 
 	return documents, dists, nil
 }
+
+func (c *Client) GetDocument(collection, property, value string) ([]byte, error) {
+	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, collection)
+	if err != nil {
+		return nil, err
+	}
+	if !docIsOpen {
+		err = c.api.DocOpen(c.sessionId, c.pod, collection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	expr := ""
+	if property != "" && value != "" {
+		expr = fmt.Sprintf("%s=%s", property, value)
+	}
+	docs, err := c.api.DocFind(c.sessionId, c.pod, collection, expr, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(docs) == 0 {
+		return nil, fmt.Errorf("document not found")
+	}
+	return docs[0], nil
+}
+
 func convertToFloat32Slice(i interface{}) ([]float32, error) {
 	// Check if the underlying value is a slice
 	if slice, ok := i.([]interface{}); ok {

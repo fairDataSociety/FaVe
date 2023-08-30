@@ -45,16 +45,28 @@ func (h *hnsw) Compress(segments int, centroids int, useBitsEncoding bool, encod
 	if err != nil {
 		return errors.Wrap(err, "Initializing compressed vector store")
 	}
+	var (
+		value []byte
+		v     *vertex
+	)
+	val, ok := h.indexCache.Get(0)
+	if ok {
+		v, ok = val.(*vertex)
+		if !ok {
+			// Now vertexValue is a pointer to the cached vertex object
+			return fmt.Errorf("failed to get vertex")
+		}
+	} else {
+		_, value, err = h.nodes.KVGet(h.className, fmt.Sprintf("%d", 0))
+		if err != nil {
+			return err
+		}
+		var err = json.Unmarshal(value, &v)
+		if err != nil {
+			return err
+		}
+	}
 
-	_, value, err := h.nodes.KVGet(h.className, fmt.Sprintf("%d", 0))
-	if err != nil {
-		return err
-	}
-	var v *vertex
-	err = json.Unmarshal(value, &v)
-	if err != nil {
-		return err
-	}
 	vec, err := h.vectorForID(context.Background(), v.Id)
 	if err != nil {
 		return errors.Wrap(err, "Inferring data dimensions")

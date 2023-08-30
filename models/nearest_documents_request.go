@@ -20,6 +20,9 @@ type NearestDocumentsRequest struct {
 	// distance
 	Distance float32 `json:"distance,omitempty" yaml:"distance,omitempty"`
 
+	// limit
+	Limit int64 `json:"limit,omitempty" yaml:"limit,omitempty"`
+
 	// Name of the collection as URI relative to the schema URL.
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 

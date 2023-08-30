@@ -33,7 +33,7 @@ func init() {
       "url": "https://github.com/fairDataSociety/FaVe",
       "email": "sabyasachi@datafund.io"
     },
-    "version": "1.19.0-prealpha"
+    "version": "0.0.0-prealpha"
   },
   "basePath": "/v1",
   "paths": {
@@ -150,6 +150,50 @@ func init() {
       }
     },
     "/documents": {
+      "get": {
+        "description": "Retrieve a document based on query parameters",
+        "operationId": "fave.getDocuments",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The property to filter the document by",
+            "name": "property",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The value of the property to filter the document by",
+            "name": "value",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The collection to use for this query",
+            "name": "collection",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        }
+      },
       "post": {
         "description": "Add documents into a collection.",
         "operationId": "fave.addDocuments",
@@ -267,6 +311,13 @@ func init() {
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
+        },
+        "propertiesToVectorize": {
+          "description": "Array of property names to be vectorized.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -274,11 +325,14 @@ func init() {
       "type": "object",
       "properties": {
         "indexes": {
-          "description": "The indexes of the collection.",
-          "type": "object"
+          "description": "The indexes of the collection for fairOS-dfs document store.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Index"
+          }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -292,7 +346,7 @@ func init() {
           "format": "uuid"
         },
         "properties": {
-          "$ref": "#/definitions/PropertySchema"
+          "$ref": "#/definitions/Property"
         }
       }
     },
@@ -313,6 +367,20 @@ func init() {
         }
       }
     },
+    "Index": {
+      "description": "This is an object for specifying which fields to index in fairOS document store while Collection creation",
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "description": "The filed name to index",
+          "type": "string"
+        },
+        "fieldType": {
+          "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
+          "type": "string"
+        }
+      }
+    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -320,6 +388,10 @@ func init() {
         "distance": {
           "type": "number",
           "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
         },
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
@@ -357,9 +429,10 @@ func init() {
         }
       }
     },
-    "PropertySchema": {
+    "Property": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "tags": [
@@ -388,7 +461,7 @@ func init() {
       "url": "https://github.com/fairDataSociety/FaVe",
       "email": "sabyasachi@datafund.io"
     },
-    "version": "1.19.0-prealpha"
+    "version": "0.0.0-prealpha"
   },
   "basePath": "/v1",
   "paths": {
@@ -505,6 +578,50 @@ func init() {
       }
     },
     "/documents": {
+      "get": {
+        "description": "Retrieve a document based on query parameters",
+        "operationId": "fave.getDocuments",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The property to filter the document by",
+            "name": "property",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The value of the property to filter the document by",
+            "name": "value",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The collection to use for this query",
+            "name": "collection",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        }
+      },
       "post": {
         "description": "Add documents into a collection.",
         "operationId": "fave.addDocuments",
@@ -622,6 +739,13 @@ func init() {
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
           "type": "string"
+        },
+        "propertiesToVectorize": {
+          "description": "Array of property names to be vectorized.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -629,11 +753,14 @@ func init() {
       "type": "object",
       "properties": {
         "indexes": {
-          "description": "The indexes of the collection.",
-          "type": "object"
+          "description": "The indexes of the collection for fairOS-dfs document store.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Index"
+          }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -647,7 +774,7 @@ func init() {
           "format": "uuid"
         },
         "properties": {
-          "$ref": "#/definitions/PropertySchema"
+          "$ref": "#/definitions/Property"
         }
       }
     },
@@ -671,6 +798,20 @@ func init() {
         }
       }
     },
+    "Index": {
+      "description": "This is an object for specifying which fields to index in fairOS document store while Collection creation",
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "description": "The filed name to index",
+          "type": "string"
+        },
+        "fieldType": {
+          "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
+          "type": "string"
+        }
+      }
+    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -678,6 +819,10 @@ func init() {
         "distance": {
           "type": "number",
           "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
         },
         "name": {
           "description": "Name of the collection as URI relative to the schema URL.",
@@ -715,9 +860,10 @@ func init() {
         }
       }
     },
-    "PropertySchema": {
+    "Property": {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "tags": [

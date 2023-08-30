@@ -24,6 +24,9 @@ type AddDocumentsRequest struct {
 
 	// Name of the collection as URI relative to the schema URL.
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	// Array of property names to be vectorized.
+	PropertiesToVectorize []string `json:"propertiesToVectorize" yaml:"propertiesToVectorize"`
 }
 
 // Validate validates this add documents request
