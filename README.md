@@ -61,7 +61,7 @@ Note :
 - BEE_API is the url of the bee node
 - RPC_API is the url of the ethereum (Sepolia for testnet) node for ENS authentication
 - STAMP_ID is the id of the stamp you want to use uploading data into swarm
-- LEVELDB_EMBEDDINGS_PATH is the local path for leveldb which has the embeddings as key-value pairs
+- GLOVE_LEVELDB_URL is glove vectorizer url
 - USER is the username of the user you want to use to access the database
 - PASSWORD is the password of the user you want to use to access the database
 - POD is the reference of the pod you want to use to store the database
