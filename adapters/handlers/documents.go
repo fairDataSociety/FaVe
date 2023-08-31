@@ -10,6 +10,10 @@ import (
 	"github.com/go-openapi/strfmt"
 )
 
+const (
+	prefix = "fave_"
+)
+
 func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsParams) middleware.Responder {
 	documentsRaw := request.Body
 	if documentsRaw.Name == "" {
@@ -34,7 +38,7 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 		}
 		documents[i] = d
 	}
-
+	documentsRaw.Name = prefix + documentsRaw.Name
 	err := s.doc.AddDocuments(documentsRaw.Name, documentsRaw.PropertiesToVectorize, documents...)
 	if err != nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject([]string{"Failed to add documents", err.Error()}...))
@@ -54,6 +58,7 @@ func (s *Handler) FaveGetNearestDocumentsHandler(request operations.FaveGetNeare
 	if err != nil {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))
 	}
+	req.Name = prefix + req.Name
 
 	documents := make([]*models.Document, len(documentsRaw))
 	for i, v := range documentsRaw {
@@ -83,6 +88,7 @@ func (s *Handler) GetDocumentsHandlerFunc(request operations.FaveGetDocumentsPar
 	if request.Collection == "" {
 		return operations.NewGetDocumentsBadRequest().WithPayload(createErrorResponseObject("Collection cannot be blank"))
 	}
+	request.Collection = prefix + request.Collection
 	documentRaw, err := s.doc.GetDocument(request.Collection, request.Property, request.Value)
 	if err != nil {
 		return operations.NewFaveGetNearestDocumentsBadRequest().WithPayload(createErrorResponseObject("Failed to get nearest documents :" + err.Error()))

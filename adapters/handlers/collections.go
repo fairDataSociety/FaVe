@@ -15,7 +15,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 	if collectionRaw.Indexes == nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection should have at least one index"))
 	}
-
+	collectionRaw.Name = prefix + collectionRaw.Name
 	indexes := make(map[string]collection.IndexType)
 	for _, v := range collectionRaw.Indexes {
 		switch v.FieldType {
@@ -46,6 +46,7 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 }
 
 func (s *Handler) FaveDeleteCollectionHandler(request operations.FaveDeleteCollectionParams) middleware.Responder {
+	request.Collection = prefix + request.Collection
 	err := s.doc.DeleteCollection(request.Collection)
 	if err != nil {
 		return operations.NewFaveDeleteCollectionBadRequest().WithPayload(createErrorResponseObject("Failed to delete collection"))

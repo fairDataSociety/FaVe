@@ -48,6 +48,7 @@ func (o *FaveAddDocumentsOK) SetPayload(payload *models.OKResponse) {
 
 // WriteResponse to the client
 func (o *FaveAddDocumentsOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
 	rw.WriteHeader(200)
 	if o.Payload != nil {
 		payload := o.Payload
