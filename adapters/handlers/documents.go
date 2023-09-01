@@ -34,7 +34,6 @@ func (s *Handler) FaveAddDocumentsHandler(request operations.FaveAddDocumentsPar
 		}
 		documents[i] = d
 	}
-
 	err := s.doc.AddDocuments(documentsRaw.Name, documentsRaw.PropertiesToVectorize, documents...)
 	if err != nil {
 		return operations.NewFaveAddDocumentsBadRequest().WithPayload(createErrorResponseObject([]string{"Failed to add documents", err.Error()}...))

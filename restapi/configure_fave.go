@@ -55,6 +55,7 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 	api.FaveRootHandler = operations.FaveRootHandlerFunc(handler.FaveRootHandler)
 
 	api.FaveCreateCollectionHandler = operations.FaveCreateCollectionHandlerFunc(handler.FaveCreateCollectionHandler)
+	api.FaveGetCollectionsHandler = operations.FaveGetCollectionsHandlerFunc(handler.FaveGetCollectionsHandler)
 	api.FaveDeleteCollectionHandler = operations.FaveDeleteCollectionHandlerFunc(handler.FaveDeleteCollectionHandler)
 	api.FaveAddDocumentsHandler = operations.FaveAddDocumentsHandlerFunc(handler.FaveAddDocumentsHandler)
 	api.FaveGetDocumentsHandler = operations.FaveGetDocumentsHandlerFunc(handler.GetDocumentsHandlerFunc)

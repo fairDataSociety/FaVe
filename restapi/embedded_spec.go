@@ -49,6 +49,48 @@ func init() {
       }
     },
     "/collections": {
+      "get": {
+        "description": "Get all collections.",
+        "operationId": "fave.getCollections",
+        "responses": {
+          "200": {
+            "description": "All collections",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Collection"
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
       "post": {
         "description": "Create a new collection.",
         "operationId": "fave.createCollection",
@@ -477,6 +519,48 @@ func init() {
       }
     },
     "/collections": {
+      "get": {
+        "description": "Get all collections.",
+        "operationId": "fave.getCollections",
+        "responses": {
+          "200": {
+            "description": "All collections",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Collection"
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
       "post": {
         "description": "Create a new collection.",
         "operationId": "fave.createCollection",

@@ -56,7 +56,7 @@ func TestFave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	file, err := os.Open("./wiki-100.csv")
+	file, err := os.Open("./wiki-15.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,6 +234,12 @@ func TestFave(t *testing.T) {
 		}
 		fmt.Println("Found:", props["title"], dist[i])
 	}
+
+	colls, err := client2.GetCollections()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("Collections:", colls[0].Name)
 }
 
 func generateDocuments(records [][]string) ([]*Document, error) {
