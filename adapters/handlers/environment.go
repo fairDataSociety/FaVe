@@ -21,7 +21,7 @@ func FromEnv(config *HandlerConfig) {
 		config.StampId = v
 	}
 
-	if v := os.Getenv("GLOVE_LEVELDB_URL"); v != "" {
+	if v := os.Getenv("VECTORIZER_URL"); v != "" {
 		config.GloveLevelDBUrl = v
 	}
 	if v := os.Getenv("USER"); v != "" {

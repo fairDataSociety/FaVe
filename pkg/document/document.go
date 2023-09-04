@@ -29,8 +29,8 @@ const (
 
 // Config for fairOS-dfs
 type Config struct {
-	Verbose         bool
-	GloveLevelDBUrl string
+	Verbose       bool
+	VectorizerUrl string
 }
 
 type Client struct {
@@ -79,12 +79,12 @@ func New(config Config, api *dfs.API) (*Client, error) {
 	//	client.vectorizer = lkup
 	//}
 
-	if config.GloveLevelDBUrl == "" {
-		logger.Errorf("GLOVE_LEVELDB_URL environment variable is not set")
+	if config.VectorizerUrl == "" {
+		logger.Errorf("VECTORIZER_URL environment variable is not set")
 	}
 
 	// leveldb lookuper
-	lkup, err := rest.NewVectorizer(config.GloveLevelDBUrl)
+	lkup, err := rest.NewVectorizer(config.VectorizerUrl)
 	if err != nil {
 		logger.Errorf("new vectorizer failed :%s\n", err.Error())
 		return nil, err

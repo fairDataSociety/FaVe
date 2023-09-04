@@ -38,8 +38,8 @@ func TestFave(t *testing.T) {
 	}
 
 	cfg := Config{
-		Verbose:         false,
-		GloveLevelDBUrl: "http://localhost:9876",
+		Verbose:       false,
+		VectorizerUrl: "http://localhost:9876",
 	}
 	client, err := New(cfg, dfsApi)
 	if err != nil {
