@@ -1,0 +1,73 @@
+project_name: fave
+
+release:
+  prerelease: auto
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=1
+before:
+  hooks:
+    - go mod download
+builds:
+  - id: fave-linux-amd64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
+
+archives:
+  - id: binary-version
+    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format: binary
+  - id: binary
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
+  - id: zip
+    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+dockers:
+  - image_templates:
+      - "fairdatasociety/fave:v{{ .Version }}"
+    use: buildx
+    ids:
+      - fave-linux-amd64
+    goarch: amd64
+    dockerfile: Dockerfile.goreleaser
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+docker_manifests:
+  - name_template: fairdatasociety/fave:v{{ .Major }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}
+    skip_push: auto
+  - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}
+    skip_push: auto
+  - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}.{{ .Patch }}{{ with .Prerelease }}-{{ . }}{{ end }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}
+  - name_template: fairdatasociety/fave:latest
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}

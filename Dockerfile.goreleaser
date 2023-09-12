@@ -1,0 +1,11 @@
+FROM debian:bullseye
+
+RUN apt-get update
+RUN apt-get install -y ca-certificates
+RUN update-ca-certificates
+
+EXPOSE 9090
+
+COPY fave /usr/local/bin/fave
+
+ENTRYPOINT ["fave"]
