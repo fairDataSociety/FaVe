@@ -1,6 +1,6 @@
 FROM golang:1.20-alpine AS build_base
 RUN apk add bash ca-certificates git gcc g++ libc-dev
-WORKDIR /go/src/github.com/fairDataSociety/FaVe
+#WORKDIR /go/src/github.com/fairDataSociety/FaVe
 ENV GO111MODULE=on
 COPY go.mod .
 COPY go.sum .
