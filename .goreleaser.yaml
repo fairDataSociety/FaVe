@@ -26,6 +26,23 @@ builds:
       - -s -w
       - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
       - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
+  - id: fave-linux-arm64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - linux
+    goarch:
+      - arm64
+    env:
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
 
 archives:
   - id: binary-version
@@ -43,7 +60,7 @@ snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
 dockers:
   - image_templates:
-      - "fairdatasociety/fave:v{{ .Version }}"
+      - "fairdatasociety/fave:v{{ .Version }}-amd64"
     use: buildx
     ids:
       - fave-linux-amd64
@@ -56,18 +73,26 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+  - image_templates:
+      - "fairdatasociety/fave:v{{ .Version }}-arm64"
+    use: buildx
+    ids:
+      - fave-linux-arm64
+    goarch: arm64
+    dockerfile: Dockerfile.goreleaser
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
 docker_manifests:
-  - name_template: fairdatasociety/fave:v{{ .Major }}
-    image_templates:
-      - fairdatasociety/fave:v{{ .Version }}
-    skip_push: auto
-  - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}
-    image_templates:
-      - fairdatasociety/fave:v{{ .Version }}
-    skip_push: auto
   - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}.{{ .Patch }}{{ with .Prerelease }}-{{ . }}{{ end }}
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}
+      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}-arm64
   - name_template: fairdatasociety/fave:latest
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}
+      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}-arm64
