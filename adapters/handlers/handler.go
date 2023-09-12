@@ -35,8 +35,8 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 		Verbose:       config.Verbose,
 		VectorizerUrl: config.GloveLevelDBUrl,
 	}
-	//ensConf, _ := contracts.TestnetConfig(contracts.Sepolia)
-	ensConf, _ := contracts.PlayConfig()
+	ensConf, _ := contracts.TestnetConfig(contracts.Sepolia)
+	//ensConf, _ := contracts.PlayConfig()
 	ensConf.ProviderBackend = config.RPCEndpoint
 	level := logrus.ErrorLevel
 	if config.Verbose {

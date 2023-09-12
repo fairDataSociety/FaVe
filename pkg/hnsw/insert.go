@@ -23,6 +23,10 @@ import (
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
 )
 
+type entrypoint struct {
+	ID uint64 `json:"id"`
+}
+
 func (h *hnsw) ValidateBeforeInsert(vector []float32) error {
 	if h.isEmpty() {
 		return nil
@@ -87,15 +91,16 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 		return errors.Wrapf(err, "grow HNSW index to accommodate node %d", node.Id)
 	}
 
-	nodeBytes, err := json.Marshal(node)
-	if err != nil {
-		return errors.Wrapf(err, "marshal node %d", node.Id)
-	}
 	h.indexCache.Add(node.Id, node)
-	err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
-	if err != nil {
-		return errors.Wrapf(err, "put node %d", node.Id)
-	}
+
+	//nodeBytes, err := json.Marshal(node)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshal node %d", node.Id)
+	//}
+	//err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
+	//if err != nil {
+	//	return errors.Wrapf(err, "put node %d", node.Id)
+	//}
 	if h.compressed.Load() {
 		compressed := h.pq.Encode(nodeVec)
 		h.storeCompressedVector(node.Id, compressed)
@@ -105,6 +110,63 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 	}
 
 	// go h.insertHook(node.ID, 0, node.Connections)
+	return nil
+}
+
+func (h *hnsw) Flush() error {
+	keys := h.indexCache.Keys()
+	for _, key := range keys {
+		iNode, ok := h.indexCache.Get(key)
+		if !ok {
+			continue
+		}
+		node := iNode.(*vertex)
+		if node.Committed {
+			continue
+		}
+		nodeBytes, err := json.Marshal(node)
+		if err != nil {
+			return errors.Wrapf(err, "marshal node %d", node.Id)
+		}
+		err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
+		if err != nil {
+			return errors.Wrapf(err, "put node %d", node.Id)
+		}
+		node.Committed = true
+		h.indexCache.Add(node.Id, node)
+	}
+	ep := &entrypoint{
+		ID: h.entryPointID,
+	}
+	epBytes, err := json.Marshal(ep)
+	if err != nil {
+		return errors.Wrapf(err, "marshal entrypoint %d", h.entryPointID)
+	}
+	err = h.nodes.KVPut(h.className, "entrypoint", epBytes)
+	if err != nil {
+		return errors.Wrapf(err, "put entrypoint %d", h.entryPointID)
+	}
+
+	return h.commitLog.Flush()
+}
+
+func (h *hnsw) LoadEntrypoint() error {
+	h.RLock()
+	defer h.RUnlock()
+
+	_, v, err := h.nodes.KVGet(h.className, "entrypoint")
+	if err != nil {
+		h.entryPointID = 0
+		return nil
+	}
+	ep := &entrypoint{}
+	err = json.Unmarshal(v, ep)
+	if err != nil {
+		h.entryPointID = 0
+		return nil
+	}
+
+	h.entryPointID = ep.ID
 	return nil
 }
 
@@ -178,18 +240,16 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 		h.cache.preload(node.Id, nodeVec)
 	}
 
-	h.Lock()
-	nodeBytes, err := json.Marshal(node)
-	if err != nil {
-		return errors.Wrapf(err, "marshal node %d", node.Id)
-	}
 	h.indexCache.Add(node.Id, node)
 
-	err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
-	if err != nil {
-		return errors.Wrapf(err, "put node %d", node.Id)
-	}
-	h.Unlock()
+	//nodeBytes, err := json.Marshal(node)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshal node %d", node.Id)
+	//}
+	//err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
+	//if err != nil {
+	//	return errors.Wrapf(err, "put node %d", node.Id)
+	//}
 
 	h.insertMetrics.prepareAndInsertNode(before)
 	before = time.Now()

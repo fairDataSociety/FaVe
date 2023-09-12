@@ -143,6 +143,13 @@ func (h *hnsw) getEntrypoint() uint64 {
 	return h.entryPointID
 }
 
+func (h *hnsw) setEntrypoint(entryPointID uint64) {
+	h.RLock()
+	defer h.RUnlock()
+
+	h.entryPointID = entryPointID
+}
+
 func (h *hnsw) copyTombstonesToAllowList(breakCleanUpTombstonedNodes breakCleanUpTombstonedNodesFunc) (ok bool, deleteList helpers.AllowList) {
 	h.resetLock.Lock()
 	defer h.resetLock.Unlock()
@@ -514,14 +521,16 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 		return h.getEntrypoint(), h.currentMaximumLayer
 	}
 
-	h.RLock()
 	kvCount, err := h.nodes.KVCount(h.className)
 	if err != nil {
-		h.RUnlock()
 		panic(err)
 	}
 	maxNodes := int(kvCount.Count)
-	h.RUnlock()
+
+	keys := h.indexCache.Keys()
+	if len(keys) > maxNodes {
+		maxNodes = len(keys)
+	}
 	for l := targetLevel; l >= 0; l-- {
 		// ideally we can find a new entrypoint at the same Level of the
 		// to-be-deleted node. However, there is a chance it was the only node on

@@ -13,8 +13,6 @@ package hnsw
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
@@ -67,13 +65,15 @@ func (n *neighborFinderConnector) Do() error {
 		}
 	}
 
-	nodeBytes, err := json.Marshal(n.node)
-	if err != nil {
-		return errors.Wrapf(err, "marshal node %d", n.node.Id)
-	}
 	n.graph.indexCache.Add(n.node.Id, n.node)
 
-	return n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
+	return nil
+	//nodeBytes, err := json.Marshal(n.node)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshal node %d", n.node.Id)
+	//}
+	//
+	//return n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
 }
 
 func (n *neighborFinderConnector) doAtLevel(level int) error {
@@ -162,15 +162,16 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 		// we can simply append
 		// updatedConnections = append(currentConnections, n.node.ID)
 		neighbor.appendConnectionAtLevelNoLock(level, n.node.Id, maximumConnections)
-		neighborBytes, err := json.Marshal(neighbor)
-		if err != nil {
-			return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-		}
 		n.graph.indexCache.Add(n.node.Id, neighbor)
-		err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
-		if err != nil {
-			return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-		}
+
+		//neighborBytes, err := json.Marshal(neighbor)
+		//if err != nil {
+		//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
+		//}
+		//err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
+		//if err != nil {
+		//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
+		//}
 		if err := n.graph.commitLog.AddLinkAtLevel(neighbor.Id, level, n.node.Id); err != nil {
 			return err
 		}
@@ -218,15 +219,15 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 		for candidates.Len() > 0 {
 			id := candidates.Pop().ID
 			neighbor.appendConnectionAtLevelNoLock(level, id, maximumConnections)
-			neighborBytes, err := json.Marshal(neighbor)
-			if err != nil {
-				return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-			}
 			n.graph.indexCache.Add(n.node.Id, neighbor)
-			err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
-			if err != nil {
-				return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-			}
+			//neighborBytes, err := json.Marshal(neighbor)
+			//if err != nil {
+			//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
+			//}
+			//err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
+			//if err != nil {
+			//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
+			//}
 			if err := n.graph.commitLog.AddLinkAtLevel(neighbor.Id, level, id); err != nil {
 				return err
 			}
@@ -314,9 +315,9 @@ func (n *neighborFinderConnector) tryEpCandidate(candidate uint64) (bool, error)
 		return false, nil
 	}
 
-	if node.isUnderMaintenance() {
-		return false, nil
-	}
+	//if node.isUnderMaintenance() {
+	//	return false, nil
+	//}
 
 	dist, ok, err := n.graph.distBetweenNodeAndVec(candidate, n.nodeVec)
 	if err != nil {
