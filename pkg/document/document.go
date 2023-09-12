@@ -147,8 +147,6 @@ func (c *Client) OpenPod(pod string) error {
 func (c *Client) CreateCollection(col *Collection) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if c.sessionId == "" {
 		return dfs.ErrUserNotLoggedIn
@@ -187,50 +185,26 @@ func (c *Client) CreateCollection(col *Collection) error {
 		return vector, err
 	}
 	kvStore := c.podInfo.GetKVStore()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	err := c.api.DocCreate(c.sessionId, c.pod, namespacedCollection, col.Indexes, true)
+	if err != nil && err != collection.ErrDocumentDBAlreadyPresent && err != collection.ErrDocumentDBAlreadyOpened {
+		return err
+	}
 
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		err := c.api.DocCreate(c.sessionId, c.pod, namespacedCollection, col.Indexes, true)
-		if err != nil {
-			cancel()
-			return
-		}
-		err = c.api.DocOpen(c.sessionId, c.pod, namespacedCollection)
-		if err != nil {
-			cancel()
-			return
-		}
-	}()
+	err = kvStore.CreateKVTable(namespacedCollection, c.podInfo.GetPodPassword(), collection.StringIndex)
+	if err != nil && err != collection.ErrKvTableAlreadyPresent {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	err = c.api.DocOpen(c.sessionId, c.pod, namespacedCollection)
+	if err != nil && err != collection.ErrDocumentDBAlreadyOpened {
+		return err
+	}
 
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		err := kvStore.CreateKVTable(namespacedCollection, c.podInfo.GetPodPassword(), collection.StringIndex)
-		if err != nil && err != collection.ErrKvTableAlreadyPresent {
-			cancel()
-			return
-		}
-		err = kvStore.OpenKVTable(namespacedCollection, c.podInfo.GetPodPassword())
-		if err != nil {
-			cancel()
-			return
-		}
-	}()
+	err = kvStore.OpenKVTable(namespacedCollection, c.podInfo.GetPodPassword())
+	if err != nil {
+		return err
+	}
 
-	wg.Wait()
 	makeCL := h.MakeNoopCommitLogger
 	index, err := h.New(h.Config{
 		RootPath:              "not-used",
@@ -399,6 +373,12 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 	c.hnswLock.Lock()
 	index := c.indices[namespacedCollection]
 	c.hnswLock.Unlock()
+	count, err := c.api.KVCount(c.sessionId, c.pod, namespacedCollection)
+	if err != nil {
+		return err
+	}
+
+	indexId := count.Count
 	for id, doc := range documents {
 		// vectorize the properties
 		// add the vector in the properties before adding the document in the collection
@@ -419,20 +399,16 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			}
 			doc.Properties["vector"] = vector.ToArray()
 
-			count, err := c.api.KVCount(c.sessionId, c.pod, namespacedCollection)
-			if err != nil {
-				return err
-			}
+			doc.Properties[hnswIndexName] = indexId
 
-			doc.Properties[hnswIndexName] = count.Count
-
-			err = index.Add(count.Count, vector.ToArray())
+			err = index.Add(indexId, vector.ToArray())
 			if err != nil {
 				c.logger.Errorf("index.Add failed :%s\n", err.Error())
 				continue
 			}
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), vector.ToArray())
 
-			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, count.Count), vector.ToArray())
+			indexId++
 		} else {
 			doc.Properties[hnswIndexName] = -1
 		}
@@ -448,9 +424,10 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error(), doc.Properties)
 			return err
 		}
-		fmt.Println("added document", id, doc.Properties["title"])
+		fmt.Println("added document", id)
 	}
-	return nil
+
+	return index.Flush()
 }
 
 func (c *Client) GetNearDocuments(collection, text string, distance float32, limit int) ([][]byte, []float32, error) {
@@ -519,7 +496,6 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 			return nil, nil, err
 		}
 	}
-
 	vector, err := c.lookup.Corpi([]string{text})
 	if err != nil {
 		return nil, nil, err
@@ -527,11 +503,14 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 	c.hnswLock.Lock()
 	index := c.indices[namespacedCollection]
 	c.hnswLock.Unlock()
+	err = index.LoadEntrypoint()
+	if err != nil {
+		return nil, nil, err
+	}
 	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	if limit != 0 && len(ids) > limit {
 		ids = ids[:limit]
 		dists = dists[:limit]

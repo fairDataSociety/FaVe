@@ -115,15 +115,15 @@ func (pf *vectorCachePrefiller[T]) prefillLevel(ctx context.Context,
 	return true, nil
 }
 
-func (pf *vectorCachePrefiller[T]) logLevel(level, count int, before time.Time) {
-	pf.logger.WithFields(logrus.Fields{
-		"action":     "hnsw_vector_cache_prefill_level",
-		"hnsw_level": level,
-		"count":      count,
-		"took":       time.Since(before),
-		"index_id":   pf.index.id,
-	}).Debug("prefilled Level in vector cache")
-}
+//func (pf *vectorCachePrefiller[T]) logLevel(level, count int, before time.Time) {
+//	pf.logger.WithFields(logrus.Fields{
+//		"action":     "hnsw_vector_cache_prefill_level",
+//		"hnsw_level": level,
+//		"count":      count,
+//		"took":       time.Since(before),
+//		"index_id":   pf.index.id,
+//	}).Debug("prefilled Level in vector cache")
+//}
 
 func (pf *vectorCachePrefiller[T]) logTotal(count, limit int, before time.Time) {
 	pf.logger.WithFields(logrus.Fields{
@@ -135,12 +135,12 @@ func (pf *vectorCachePrefiller[T]) logTotal(count, limit int, before time.Time) 
 	}).Info("prefilled vector cache")
 }
 
-func levelOfNode(node *vertex) int {
-	node.Lock()
-	defer node.Unlock()
-
-	return node.Level
-}
+//func levelOfNode(node *vertex) int {
+//	node.Lock()
+//	defer node.Unlock()
+//
+//	return node.Level
+//}
 
 func (pf *vectorCachePrefiller[T]) maxLevel() int {
 	pf.index.Lock()

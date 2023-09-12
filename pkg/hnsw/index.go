@@ -182,6 +182,8 @@ type CommitLogger interface {
 }
 
 type VectorIndex interface {
+	Flush() error
+	LoadEntrypoint() error
 	Add(id uint64, vector []float32) error
 	KnnSearchByVectorMaxDist(query []float32, dist float32, ef int,
 		allowList helpers.AllowList) ([]uint64, []float32, error)
@@ -679,11 +681,6 @@ func (h *hnsw) Shutdown(ctx context.Context) error {
 
 	return nil
 }
-
-func (h *hnsw) Flush() error {
-	return h.commitLog.Flush()
-}
-
 func (h *hnsw) Entrypoint() uint64 {
 	h.RLock()
 	defer h.RUnlock()

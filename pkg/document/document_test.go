@@ -4,6 +4,10 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/fairdatasociety/fairOS-dfs/pkg/blockstore/bee/mock"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
@@ -13,9 +17,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jdkato/prose/v2"
 	"github.com/sirupsen/logrus"
-	"os"
-	"strings"
-	"testing"
 )
 
 const (
@@ -45,7 +46,6 @@ func TestFave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	err = client.Login(username, password)
 	if err != nil {
 		t.Fatal(err)
@@ -87,12 +87,10 @@ func TestFave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents...)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	//// adding second time
 	//documents, err = generateDocuments(records)
 	//if err != nil {
@@ -105,7 +103,7 @@ func TestFave(t *testing.T) {
 	//}
 
 	//for i, _ := range documents {
-	//	s, v, err := dfsApi.KVGet(client.sessionId, client.pod, col.Name, fmt.Sprintf("%d", i))
+	//	s, v, err := dfsApi.KVGet(client.sessionId, client.pod, namespace+col.Name, fmt.Sprintf("%d", i))
 	//	if err != nil {
 	//		log.Fatal(err)
 	//	}
@@ -206,7 +204,6 @@ func TestFave(t *testing.T) {
 		fmt.Println("Found:", props["title"], dist[i])
 	}
 
-	fmt.Println("===================================== client2")
 	client2, err := New(cfg, dfsApi)
 	if err != nil {
 		t.Fatal(err)

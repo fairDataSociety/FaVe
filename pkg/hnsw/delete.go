@@ -514,14 +514,16 @@ func (h *hnsw) findNewLocalEntrypoint(denyList helpers.AllowList, targetLevel in
 		return h.getEntrypoint(), h.currentMaximumLayer
 	}
 
-	h.RLock()
 	kvCount, err := h.nodes.KVCount(h.className)
 	if err != nil {
-		h.RUnlock()
 		panic(err)
 	}
 	maxNodes := int(kvCount.Count)
-	h.RUnlock()
+
+	keys := h.indexCache.Keys()
+	if len(keys) > maxNodes {
+		maxNodes = len(keys)
+	}
 	for l := targetLevel; l >= 0; l-- {
 		// ideally we can find a new entrypoint at the same Level of the
 		// to-be-deleted node. However, there is a chance it was the only node on

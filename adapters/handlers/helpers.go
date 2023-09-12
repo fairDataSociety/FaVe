@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/fairDataSociety/FaVe/models"
 )
 
@@ -18,12 +17,6 @@ func createErrorResponseObject(messages ...string) *models.ErrorResponse {
 	}
 
 	return er
-}
-
-func errPayloadFromSingleErr(err error) *models.ErrorResponse {
-	return &models.ErrorResponse{Error: []*models.ErrorResponseErrorItems0{{
-		Message: fmt.Sprintf("%s", err),
-	}}}
 }
 
 // createOKResponseObject is a common function to create an ok response
