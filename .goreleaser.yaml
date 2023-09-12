@@ -1,0 +1,38 @@
+project_name: fave
+
+release:
+  prerelease: auto
+
+builds:
+  - skip: true
+
+dockers:
+  - image_templates:
+      - "fairdatasociety/fave:v{{ .Version }}-amd64"
+    use: buildx
+    ids:
+      - fave
+    goarch: amd64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+docker_manifests:
+  - name_template: fairdatasociety/fave:v{{ .Major }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}-amd64
+    skip_push: auto
+  - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}-amd64
+    skip_push: auto
+  - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}.{{ .Patch }}{{ with .Prerelease }}-{{ . }}{{ end }}
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}-amd64
+  - name_template: fairdatasociety/fave:latest
+    image_templates:
+      - fairdatasociety/fave:v{{ .Version }}-amd64
