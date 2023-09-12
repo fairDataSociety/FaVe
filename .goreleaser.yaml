@@ -43,7 +43,7 @@ snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
 dockers:
   - image_templates:
-      - "fairdatasociety/fave:v{{ .Version }}-amd64"
+      - "fairdatasociety/fave:v{{ .Version }}"
     use: buildx
     ids:
       - fave-linux-amd64
@@ -59,15 +59,15 @@ dockers:
 docker_manifests:
   - name_template: fairdatasociety/fave:v{{ .Major }}
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}
     skip_push: auto
   - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}
     skip_push: auto
   - name_template: fairdatasociety/fave:v{{ .Major }}.{{ .Minor }}.{{ .Patch }}{{ with .Prerelease }}-{{ . }}{{ end }}
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}
   - name_template: fairdatasociety/fave:latest
     image_templates:
-      - fairdatasociety/fave:v{{ .Version }}-amd64
+      - fairdatasociety/fave:v{{ .Version }}
