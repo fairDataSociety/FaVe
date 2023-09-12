@@ -9,7 +9,6 @@ import (
 	"github.com/fairdatasociety/fairOS-dfs/pkg/feed"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
-	"log"
 	"os"
 	"testing"
 )
@@ -71,19 +70,23 @@ func TestHnsw(t *testing.T) {
 	}, kvStore)
 
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
-
+	fmt.Println("testvectors", testVectors)
 	for i, vec := range testVectors {
 		err := index.Add(uint64(i), vec)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 	}
-	for i, _ := range testVectors {
+	err = index.Flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range testVectors {
 		s, v, err := kvStore.KVGet(tableName, fmt.Sprintf("%d", i))
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		fmt.Println(s, string(v))
 	}
@@ -91,7 +94,7 @@ func TestHnsw(t *testing.T) {
 	position := 0
 	ids, _, err := index.KnnSearchByVectorMaxDist(testVectors[position], 0.2, 36, nil)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	fmt.Println(ids)
 }

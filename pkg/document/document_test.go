@@ -4,6 +4,10 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/fairdatasociety/fairOS-dfs/pkg/blockstore/bee/mock"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
@@ -13,9 +17,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jdkato/prose/v2"
 	"github.com/sirupsen/logrus"
-	"os"
-	"strings"
-	"testing"
 )
 
 const (

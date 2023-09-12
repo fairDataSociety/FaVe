@@ -26,7 +26,7 @@ func NewVectorizer(url string) (*Vectorizer, error) {
 		Timeout: time.Second * 10,
 	}
 
-	healthURL := fmt.Sprintf("%s/health", url)
+	healthURL := fmt.Sprintf("%s/%s", url, healthCheckPath)
 	resp, err := client.Get(healthURL)
 	if err != nil {
 		return nil, err

@@ -143,13 +143,6 @@ func (h *hnsw) getEntrypoint() uint64 {
 	return h.entryPointID
 }
 
-func (h *hnsw) setEntrypoint(entryPointID uint64) {
-	h.RLock()
-	defer h.RUnlock()
-
-	h.entryPointID = entryPointID
-}
-
 func (h *hnsw) copyTombstonesToAllowList(breakCleanUpTombstonedNodes breakCleanUpTombstonedNodesFunc) (ok bool, deleteList helpers.AllowList) {
 	h.resetLock.Lock()
 	defer h.resetLock.Unlock()
