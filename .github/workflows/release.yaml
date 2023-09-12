@@ -35,10 +35,6 @@ jobs:
           echo 'DOCKER_CREDS_FILE=.docker-creds'                                        > .release-env
           echo 'GITHUB_TOKEN=${{secrets.GITHUB_TOKEN}}'                                >> .release-env
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          sudo rm -rf dist
+          make release

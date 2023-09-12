@@ -2,18 +2,53 @@ project_name: fave
 
 release:
   prerelease: auto
-
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=1
+before:
+  hooks:
+    - go mod download
 builds:
-  - skip: true
+  - id: fave-linux-amd64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
 
+archives:
+  - id: binary-version
+    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format: binary
+  - id: binary
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
+  - id: zip
+    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
 dockers:
   - image_templates:
       - "fairdatasociety/fave:v{{ .Version }}-amd64"
     use: buildx
     ids:
-      - fave
+      - fave-linux-amd64
     goarch: amd64
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--pull"
