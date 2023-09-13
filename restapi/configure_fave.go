@@ -6,16 +6,16 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/fairDataSociety/FaVe/adapters/handlers"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/fairDataSociety/FaVe"
+	"github.com/fairDataSociety/FaVe/adapters/handlers"
+	"github.com/fairDataSociety/FaVe/restapi/operations"
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/yamlpc"
-
-	"github.com/fairDataSociety/FaVe/restapi/operations"
 )
 
 //go:generate swagger generate server --target ../../FaVe --name Fave --spec ../openapi-spec/schema.json --principal interface{}
@@ -53,7 +53,7 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 		os.Exit(1)
 	}
 	api.FaveRootHandler = operations.FaveRootHandlerFunc(handler.FaveRootHandler)
-
+	fmt.Println("Version: ", FaVe.Version)
 	api.FaveCreateCollectionHandler = operations.FaveCreateCollectionHandlerFunc(handler.FaveCreateCollectionHandler)
 	api.FaveGetCollectionsHandler = operations.FaveGetCollectionsHandlerFunc(handler.FaveGetCollectionsHandler)
 	api.FaveDeleteCollectionHandler = operations.FaveDeleteCollectionHandlerFunc(handler.FaveDeleteCollectionHandler)

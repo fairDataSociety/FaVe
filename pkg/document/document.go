@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"sync"
+
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 	"github.com/fairDataSociety/FaVe/pkg/vectorizer"
@@ -14,9 +18,6 @@ import (
 	"github.com/fairdatasociety/fairOS-dfs/pkg/pod"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/sirupsen/logrus"
-	"os"
-	"strings"
-	"sync"
 )
 
 const (
@@ -331,6 +332,9 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			if err != nil {
 				return nil, err
 			}
+			if len(docs) == 0 {
+				return nil, fmt.Errorf("document not found")
+			}
 			doc := docs[0]
 			data := map[string]interface{}{}
 			err = json.Unmarshal(doc, &data)
@@ -454,6 +458,9 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
 			if err != nil {
 				return nil, err
+			}
+			if len(docs) == 0 {
+				return nil, fmt.Errorf("document not found")
 			}
 			doc := docs[0]
 			data := map[string]interface{}{}
