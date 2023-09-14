@@ -536,6 +536,10 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 				errCh <- err
 				return
 			}
+			if len(docs) == 0 {
+				errCh <- fmt.Errorf("document not found %d", id)
+				return
+			}
 			documents[i] = docs[0]
 		}(i, id)
 	}
