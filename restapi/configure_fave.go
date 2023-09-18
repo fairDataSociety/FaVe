@@ -60,6 +60,7 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 	api.FaveAddDocumentsHandler = operations.FaveAddDocumentsHandlerFunc(handler.FaveAddDocumentsHandler)
 	api.FaveGetDocumentsHandler = operations.FaveGetDocumentsHandlerFunc(handler.GetDocumentsHandlerFunc)
 	api.FaveGetNearestDocumentsHandler = operations.FaveGetNearestDocumentsHandlerFunc(handler.FaveGetNearestDocumentsHandler)
+	api.FaveGetNearestDocumentsByVectorHandler = operations.FaveGetNearestDocumentsByVectorHandlerFunc(handler.FaveGetNearestDocumentsByVectorHandler)
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}

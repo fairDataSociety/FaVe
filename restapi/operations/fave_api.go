@@ -62,6 +62,9 @@ func NewFaveAPI(spec *loads.Document) *FaveAPI {
 		FaveGetNearestDocumentsHandler: FaveGetNearestDocumentsHandlerFunc(func(params FaveGetNearestDocumentsParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveGetNearestDocuments has not yet been implemented")
 		}),
+		FaveGetNearestDocumentsByVectorHandler: FaveGetNearestDocumentsByVectorHandlerFunc(func(params FaveGetNearestDocumentsByVectorParams) middleware.Responder {
+			return middleware.NotImplemented("operation FaveGetNearestDocumentsByVector has not yet been implemented")
+		}),
 		FaveRootHandler: FaveRootHandlerFunc(func(params FaveRootParams) middleware.Responder {
 			return middleware.NotImplemented("operation FaveRoot has not yet been implemented")
 		}),
@@ -116,6 +119,8 @@ type FaveAPI struct {
 	FaveGetDocumentsHandler FaveGetDocumentsHandler
 	// FaveGetNearestDocumentsHandler sets the operation handler for the fave get nearest documents operation
 	FaveGetNearestDocumentsHandler FaveGetNearestDocumentsHandler
+	// FaveGetNearestDocumentsByVectorHandler sets the operation handler for the fave get nearest documents by vector operation
+	FaveGetNearestDocumentsByVectorHandler FaveGetNearestDocumentsByVectorHandler
 	// FaveRootHandler sets the operation handler for the fave root operation
 	FaveRootHandler FaveRootHandler
 
@@ -215,6 +220,9 @@ func (o *FaveAPI) Validate() error {
 	}
 	if o.FaveGetNearestDocumentsHandler == nil {
 		unregistered = append(unregistered, "FaveGetNearestDocumentsHandler")
+	}
+	if o.FaveGetNearestDocumentsByVectorHandler == nil {
+		unregistered = append(unregistered, "FaveGetNearestDocumentsByVectorHandler")
 	}
 	if o.FaveRootHandler == nil {
 		unregistered = append(unregistered, "FaveRootHandler")
@@ -333,6 +341,10 @@ func (o *FaveAPI) initHandlerCache() {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
 	o.handlers["POST"]["/nearest-documents"] = NewFaveGetNearestDocuments(o.context, o.FaveGetNearestDocumentsHandler)
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/nearest-documents-by-vector"] = NewFaveGetNearestDocumentsByVector(o.context, o.FaveGetNearestDocumentsByVectorHandler)
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}

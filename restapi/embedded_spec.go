@@ -336,6 +336,57 @@ func init() {
           }
         }
       }
+    },
+    "/nearest-documents-by-vector": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocumentsByVector",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -420,6 +471,31 @@ func init() {
         "fieldType": {
           "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
           "type": "string"
+        }
+      }
+    },
+    "NearestDocumentsByVectorRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
         }
       }
     },
@@ -806,6 +882,57 @@ func init() {
           }
         }
       }
+    },
+    "/nearest-documents-by-vector": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocumentsByVector",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -893,6 +1020,31 @@ func init() {
         "fieldType": {
           "description": "Type of the field to index. Types can be \"string\", \"number\", \"map\", \"list\"",
           "type": "string"
+        }
+      }
+    },
+    "NearestDocumentsByVectorRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
         }
       }
     },
