@@ -125,6 +125,31 @@
       },
       "type": "object"
     },
+    "NearestDocumentsByVectorRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "properties": {
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "name": {
+          "description": "Name of the collection as URI relative to the schema URL.",
+          "type": "string"
+        },
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        }
+      },
+      "type": "object"
+    },
     "NearestDocumentsResponse": {
       "description": "Response for the Nearest documents request",
       "properties": {
@@ -417,6 +442,57 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/NearestDocumentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "collection added",
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsResponse"
+            }
+          },
+          "400": {
+            "description": "Malformed request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid credentials."
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Request body is well-formed (i.e., syntactically correct), but semantically erroneous.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "An error has occurred while trying to fulfill the request. Most likely the ErrorResponse will contain more information about the error.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/nearest-documents-by-vector": {
+      "post": {
+        "description": "Get nearest documents for a collection.",
+        "operationId": "fave.getNearestDocumentsByVector",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
             }
           }
         ],

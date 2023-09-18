@@ -384,37 +384,53 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 	indexId := count.Count
 	for id, doc := range documents {
-		// vectorize the properties
-		// add the vector in the properties before adding the document in the collection
-		vectorData := ""
-		for _, property := range propertiesToIndex {
-			dt, ok := doc.Properties[property]
-			if ok {
-				vectorData += dt.(string) + " "
-			}
-		}
 		doc.Properties["id"] = doc.ID
 
-		if vectorData != "" {
-			vector, err := c.lookup.Corpi([]string{vectorData})
-			if err != nil {
-				c.logger.Errorf("corpi failed :%s\n", err.Error())
-				continue
-			}
-			doc.Properties["vector"] = vector.ToArray()
+		//check if vector is already present in the properties
+		if doc.Properties["vector"] != nil {
 
 			doc.Properties[hnswIndexName] = indexId
 
-			err = index.Add(indexId, vector.ToArray())
+			err = index.Add(indexId, doc.Properties["vector"].([]float32))
 			if err != nil {
 				c.logger.Errorf("index.Add failed :%s\n", err.Error())
 				continue
 			}
-			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), vector.ToArray())
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), doc.Properties["vector"].([]float32))
 
 			indexId++
 		} else {
-			doc.Properties[hnswIndexName] = -1
+			// vectorize the properties
+			// add the vector in the properties before adding the document in the collection
+			vectorData := ""
+			for _, property := range propertiesToIndex {
+				dt, ok := doc.Properties[property]
+				if ok {
+					vectorData += dt.(string) + " "
+				}
+			}
+
+			if vectorData != "" {
+				vector, err := c.lookup.Corpi([]string{vectorData})
+				if err != nil {
+					c.logger.Errorf("corpi failed :%s\n", err.Error())
+					continue
+				}
+				doc.Properties["vector"] = vector.ToArray()
+
+				doc.Properties[hnswIndexName] = indexId
+
+				err = index.Add(indexId, vector.ToArray())
+				if err != nil {
+					c.logger.Errorf("index.Add failed :%s\n", err.Error())
+					continue
+				}
+				c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), vector.ToArray())
+
+				indexId++
+			} else {
+				doc.Properties[hnswIndexName] = -1
+			}
 		}
 
 		data, err := json.Marshal(doc.Properties)
@@ -515,6 +531,124 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 		return nil, nil, err
 	}
 	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	if limit != 0 && len(ids) > limit {
+		ids = ids[:limit]
+		dists = dists[:limit]
+	}
+
+	documents := make([][]byte, len(ids))
+	wg := sync.WaitGroup{}
+	errCh := make(chan error, len(ids))
+	for i, id := range ids {
+		wg.Add(1)
+		go func(i int, id uint64) {
+			defer wg.Done()
+			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if len(docs) == 0 {
+				errCh <- fmt.Errorf("document not found %d", id)
+				return
+			}
+			documents[i] = docs[0]
+		}(i, id)
+	}
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		return nil, nil, err
+	}
+
+	return documents, dists, nil
+}
+
+func (c *Client) GetNearDocumentsByVector(collection string, vector []float32, distance float32, limit int) ([][]byte, []float32, error) {
+	namespacedCollection := namespace + collection
+
+	kvStore := c.podInfo.GetKVStore()
+	_, err := kvStore.KVCount(namespacedCollection)
+	if err != nil {
+		err = kvStore.OpenKVTable(namespacedCollection, c.podInfo.GetPodPassword())
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	docIsOpen, err := c.api.IsDBOpened(c.sessionId, c.pod, namespacedCollection)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !docIsOpen {
+		vectorForID := func(ctx context.Context, id uint64) ([]float32, error) {
+			if v, ok := c.documentCache.Get(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, id)); ok {
+				return v.([]float32), nil
+			}
+			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
+			if err != nil {
+				return nil, err
+			}
+			if len(docs) == 0 {
+				return nil, fmt.Errorf("document not found")
+			}
+			doc := docs[0]
+			data := map[string]interface{}{}
+			err = json.Unmarshal(doc, &data)
+			if err != nil {
+				return nil, err
+			}
+			if data["vector"] == nil {
+				return nil, fmt.Errorf("vector is nil")
+			}
+			vector, err := convertToFloat32Slice(data["vector"])
+			if err != nil {
+				return nil, err
+			}
+			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, id), vector)
+			return vector, nil
+		}
+
+		makeCL := h.MakeNoopCommitLogger
+		index, err := h.New(h.Config{
+			RootPath:              "not-used",
+			ID:                    "not-used",
+			MakeCommitLoggerThunk: makeCL,
+			DistanceProvider:      distancer.NewCosineDistanceProvider(),
+			VectorForIDThunk:      vectorForID,
+			ClassName:             namespacedCollection,
+		}, h.UserConfig{
+			MaxConnections: 30,
+			EFConstruction: 60,
+		}, kvStore)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		c.hnswLock.Lock()
+		c.indices[namespacedCollection] = index
+		c.hnswLock.Unlock()
+		err = c.api.DocOpen(c.sessionId, c.pod, namespacedCollection)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	c.hnswLock.Lock()
+	index := c.indices[namespacedCollection]
+	c.hnswLock.Unlock()
+	err = index.LoadEntrypoint()
+	if err != nil {
+		return nil, nil, err
+	}
+	ids, dists, err := index.KnnSearchByVectorMaxDist(vector, distance, 800, nil)
 	if err != nil {
 		return nil, nil, err
 	}
