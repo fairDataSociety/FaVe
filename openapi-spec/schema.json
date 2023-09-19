@@ -103,7 +103,7 @@
       "type": "object"
     },
     "NearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
+      "description": "Get the nearest documents from the collection by text",
       "properties": {
         "text": {
           "description": "The text to search for.",
@@ -125,14 +125,15 @@
       "type": "object"
     },
     "VectorNearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
+      "description": "Get the nearest documents from the collection by vector",
       "properties": {
         "vector": {
           "description": "The vector to search for",
-          "type": "array",
           "items": {
-            "type": "number"
-          }
+            "type": "number",
+            "format": "float"
+          },
+          "type": "array"
         },
         "name": {
           "description": "Name of the collection",
