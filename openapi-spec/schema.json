@@ -1,7 +1,6 @@
 {
   "basePath": "/v1",
   "consumes": [
-    "application/yaml",
     "application/json"
   ],
   "definitions": {
@@ -90,7 +89,7 @@
           "type": "array"
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "propertiesToVectorize": {
@@ -111,7 +110,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "distance": {
@@ -125,7 +124,7 @@
       },
       "type": "object"
     },
-    "NearestDocumentsByVectorRequest": {
+    "VectorNearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "properties": {
         "vector": {
@@ -136,7 +135,7 @@
           }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "distance": {
@@ -161,7 +160,7 @@
           "type": "array"
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       },
@@ -396,7 +395,7 @@
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/OKResponse"
             }
@@ -447,7 +446,7 @@
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }
@@ -492,13 +491,13 @@
             "name": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
+              "$ref": "#/definitions/VectorNearestDocumentsRequest"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }

@@ -15,7 +15,6 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/runtime/security"
-	"github.com/go-openapi/runtime/yamlpc"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -40,7 +39,6 @@ func NewFaveAPI(spec *loads.Document) *FaveAPI {
 		BearerAuthenticator: security.BearerAuth,
 
 		JSONConsumer: runtime.JSONConsumer(),
-		YamlConsumer: yamlpc.YAMLConsumer(),
 
 		JSONProducer: runtime.JSONProducer(),
 
@@ -99,9 +97,6 @@ type FaveAPI struct {
 	// JSONConsumer registers a consumer for the following mime types:
 	//   - application/json
 	JSONConsumer runtime.Consumer
-	// YamlConsumer registers a consumer for the following mime types:
-	//   - application/yaml
-	YamlConsumer runtime.Consumer
 
 	// JSONProducer registers a producer for the following mime types:
 	//   - application/json
@@ -195,9 +190,6 @@ func (o *FaveAPI) Validate() error {
 	if o.JSONConsumer == nil {
 		unregistered = append(unregistered, "JSONConsumer")
 	}
-	if o.YamlConsumer == nil {
-		unregistered = append(unregistered, "YamlConsumer")
-	}
 
 	if o.JSONProducer == nil {
 		unregistered = append(unregistered, "JSONProducer")
@@ -258,8 +250,6 @@ func (o *FaveAPI) ConsumersFor(mediaTypes []string) map[string]runtime.Consumer 
 		switch mt {
 		case "application/json":
 			result["application/json"] = o.JSONConsumer
-		case "application/yaml":
-			result["application/yaml"] = o.YamlConsumer
 		}
 
 		if c, ok := o.customConsumers[mt]; ok {

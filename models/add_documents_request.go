@@ -22,7 +22,7 @@ type AddDocumentsRequest struct {
 	// The actual list of Objects.
 	Documents []*Document `json:"documents" yaml:"documents"`
 
-	// Name of the collection as URI relative to the schema URL.
+	// Name of the collection
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	// Array of property names to be vectorized.

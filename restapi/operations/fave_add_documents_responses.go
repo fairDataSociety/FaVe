@@ -17,7 +17,7 @@ import (
 const FaveAddDocumentsOKCode int = 200
 
 /*
-FaveAddDocumentsOK collection added
+FaveAddDocumentsOK Successful response
 
 swagger:response faveAddDocumentsOK
 */

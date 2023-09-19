@@ -19,7 +19,6 @@ var (
 func init() {
 	SwaggerJSON = json.RawMessage([]byte(`{
   "consumes": [
-    "application/yaml",
     "application/json"
   ],
   "produces": [
@@ -251,7 +250,7 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/OKResponse"
             }
@@ -302,7 +301,7 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }
@@ -347,13 +346,13 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
+              "$ref": "#/definitions/VectorNearestDocumentsRequest"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }
@@ -402,7 +401,7 @@ func init() {
           }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "propertiesToVectorize": {
@@ -474,31 +473,6 @@ func init() {
         }
       }
     },
-    "NearestDocumentsByVectorRequest": {
-      "description": "Get the nearest documents from the collection.",
-      "type": "object",
-      "properties": {
-        "distance": {
-          "type": "number",
-          "format": "float"
-        },
-        "limit": {
-          "type": "number",
-          "format": "int"
-        },
-        "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
-          "type": "string"
-        },
-        "vector": {
-          "description": "The vector to search for",
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        }
-      }
-    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -512,7 +486,7 @@ func init() {
           "format": "int"
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "text": {
@@ -533,7 +507,7 @@ func init() {
           }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -551,6 +525,31 @@ func init() {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
+    },
+    "VectorNearestDocumentsRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
     }
   },
   "tags": [
@@ -565,8 +564,7 @@ func init() {
 }`))
 	FlatSwaggerJSON = json.RawMessage([]byte(`{
   "consumes": [
-    "application/json",
-    "application/yaml"
+    "application/json"
   ],
   "produces": [
     "application/json"
@@ -797,7 +795,7 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/OKResponse"
             }
@@ -848,7 +846,7 @@ func init() {
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }
@@ -893,13 +891,13 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
+              "$ref": "#/definitions/VectorNearestDocumentsRequest"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "collection added",
+            "description": "Successful response",
             "schema": {
               "$ref": "#/definitions/NearestDocumentsResponse"
             }
@@ -948,7 +946,7 @@ func init() {
           }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "propertiesToVectorize": {
@@ -1023,31 +1021,6 @@ func init() {
         }
       }
     },
-    "NearestDocumentsByVectorRequest": {
-      "description": "Get the nearest documents from the collection.",
-      "type": "object",
-      "properties": {
-        "distance": {
-          "type": "number",
-          "format": "float"
-        },
-        "limit": {
-          "type": "number",
-          "format": "int"
-        },
-        "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
-          "type": "string"
-        },
-        "vector": {
-          "description": "The vector to search for",
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        }
-      }
-    },
     "NearestDocumentsRequest": {
       "description": "Get the nearest documents from the collection.",
       "type": "object",
@@ -1061,7 +1034,7 @@ func init() {
           "format": "int"
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         },
         "text": {
@@ -1082,7 +1055,7 @@ func init() {
           }
         },
         "name": {
-          "description": "Name of the collection as URI relative to the schema URL.",
+          "description": "Name of the collection",
           "type": "string"
         }
       }
@@ -1100,6 +1073,31 @@ func init() {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
+    },
+    "VectorNearestDocumentsRequest": {
+      "description": "Get the nearest documents from the collection.",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
     }
   },
   "tags": [

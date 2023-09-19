@@ -11,7 +11,6 @@
 //
 //	Consumes:
 //	  - application/json
-//	  - application/yaml
 //
 //	Produces:
 //	  - application/json

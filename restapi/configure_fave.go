@@ -15,7 +15,6 @@ import (
 	"github.com/fairDataSociety/FaVe/restapi/operations"
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/runtime/yamlpc"
 )
 
 //go:generate swagger generate server --target ../../FaVe --name Fave --spec ../openapi-spec/schema.json --principal interface{}
@@ -42,7 +41,6 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 	// api.UseRedoc()
 
 	api.JSONConsumer = runtime.JSONConsumer()
-	api.YamlConsumer = yamlpc.YAMLConsumer()
 
 	api.JSONProducer = runtime.JSONProducer()
 

@@ -17,7 +17,7 @@ import (
 const FaveGetNearestDocumentsByVectorOKCode int = 200
 
 /*
-FaveGetNearestDocumentsByVectorOK collection added
+FaveGetNearestDocumentsByVectorOK Successful response
 
 swagger:response faveGetNearestDocumentsByVectorOK
 */

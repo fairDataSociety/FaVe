@@ -12,10 +12,10 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// NearestDocumentsRequest Get the nearest documents from the collection.
+// VectorNearestDocumentsRequest Get the nearest documents from the collection.
 //
-// swagger:model NearestDocumentsRequest
-type NearestDocumentsRequest struct {
+// swagger:model VectorNearestDocumentsRequest
+type VectorNearestDocumentsRequest struct {
 
 	// distance
 	Distance float32 `json:"distance,omitempty" yaml:"distance,omitempty"`
@@ -26,22 +26,22 @@ type NearestDocumentsRequest struct {
 	// Name of the collection
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
-	// The text to search for.
-	Text string `json:"text,omitempty" yaml:"text,omitempty"`
+	// The vector to search for
+	Vector []float64 `json:"vector" yaml:"vector"`
 }
 
-// Validate validates this nearest documents request
-func (m *NearestDocumentsRequest) Validate(formats strfmt.Registry) error {
+// Validate validates this vector nearest documents request
+func (m *VectorNearestDocumentsRequest) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this nearest documents request based on context it is used
-func (m *NearestDocumentsRequest) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this vector nearest documents request based on context it is used
+func (m *VectorNearestDocumentsRequest) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *NearestDocumentsRequest) MarshalBinary() ([]byte, error) {
+func (m *VectorNearestDocumentsRequest) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -49,8 +49,8 @@ func (m *NearestDocumentsRequest) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *NearestDocumentsRequest) UnmarshalBinary(b []byte) error {
-	var res NearestDocumentsRequest
+func (m *VectorNearestDocumentsRequest) UnmarshalBinary(b []byte) error {
+	var res VectorNearestDocumentsRequest
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -38,7 +38,7 @@ type FaveGetNearestDocumentsByVectorParams struct {
 	  Required: true
 	  In: body
 	*/
-	Body *models.NearestDocumentsByVectorRequest
+	Body *models.VectorNearestDocumentsRequest
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -52,7 +52,7 @@ func (o *FaveGetNearestDocumentsByVectorParams) BindRequest(r *http.Request, rou
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
-		var body models.NearestDocumentsByVectorRequest
+		var body models.VectorNearestDocumentsRequest
 		if err := route.Consumer.Consume(r.Body, &body); err != nil {
 			if err == io.EOF {
 				res = append(res, errors.Required("body", "body", ""))
