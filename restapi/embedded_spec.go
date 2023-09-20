@@ -346,7 +346,7 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/VectorNearestDocumentsRequest"
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
             }
           }
         ],
@@ -473,8 +473,34 @@ func init() {
         }
       }
     },
+    "NearestDocumentsByVectorRequest": {
+      "description": "Get the nearest documents from the collection by vector",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      }
+    },
     "NearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
+      "description": "Get the nearest documents from the collection by text",
       "type": "object",
       "properties": {
         "distance": {
@@ -525,31 +551,6 @@ func init() {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
-    },
-    "VectorNearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
-      "type": "object",
-      "properties": {
-        "distance": {
-          "type": "number",
-          "format": "float"
-        },
-        "limit": {
-          "type": "number",
-          "format": "int"
-        },
-        "name": {
-          "description": "Name of the collection",
-          "type": "string"
-        },
-        "vector": {
-          "description": "The vector to search for",
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        }
-      }
     }
   },
   "tags": [
@@ -891,7 +892,7 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/VectorNearestDocumentsRequest"
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
             }
           }
         ],
@@ -1021,8 +1022,34 @@ func init() {
         }
       }
     },
+    "NearestDocumentsByVectorRequest": {
+      "description": "Get the nearest documents from the collection by vector",
+      "type": "object",
+      "properties": {
+        "distance": {
+          "type": "number",
+          "format": "float"
+        },
+        "limit": {
+          "type": "number",
+          "format": "int"
+        },
+        "name": {
+          "description": "Name of the collection",
+          "type": "string"
+        },
+        "vector": {
+          "description": "The vector to search for",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      }
+    },
     "NearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
+      "description": "Get the nearest documents from the collection by text",
       "type": "object",
       "properties": {
         "distance": {
@@ -1073,31 +1100,6 @@ func init() {
       "description": "This is an open object, with OpenAPI Specification 3.0 this will be more detailed.",
       "type": "object",
       "additionalProperties": true
-    },
-    "VectorNearestDocumentsRequest": {
-      "description": "Get the nearest documents from the collection.",
-      "type": "object",
-      "properties": {
-        "distance": {
-          "type": "number",
-          "format": "float"
-        },
-        "limit": {
-          "type": "number",
-          "format": "int"
-        },
-        "name": {
-          "description": "Name of the collection",
-          "type": "string"
-        },
-        "vector": {
-          "description": "The vector to search for",
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        }
-      }
     }
   },
   "tags": [

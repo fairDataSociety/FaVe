@@ -388,17 +388,42 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 		//check if vector is already present in the properties
 		if doc.Properties["vector"] != nil {
-
 			doc.Properties[hnswIndexName] = indexId
 
-			err = index.Add(indexId, doc.Properties["vector"].([]float32))
-			if err != nil {
-				c.logger.Errorf("index.Add failed :%s\n", err.Error())
-				continue
-			}
-			c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), doc.Properties["vector"].([]float32))
+			if slice, ok := doc.Properties["vector"].([]interface{}); ok {
 
-			indexId++
+				vector := make([]float32, len(slice))
+				for j, v := range slice {
+					var result float32
+
+					switch value := v.(type) {
+					case json.Number:
+						f64Val, err := value.Float64()
+						if err != nil {
+							return fmt.Errorf("vector is not []float32")
+						} else {
+							result = float32(f64Val)
+						}
+					case float32:
+						result = value
+					case float64:
+						result = float32(value)
+					default:
+						return fmt.Errorf("vector is not []float32")
+					}
+					vector[j] = result
+				}
+				err = index.Add(indexId, vector)
+				if err != nil {
+					c.logger.Errorf("index.Add failed :%s\n", err.Error())
+					continue
+				}
+				c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), vector)
+
+				indexId++
+			} else {
+				return fmt.Errorf("vector is not []float32")
+			}
 		} else {
 			// vectorize the properties
 			// add the vector in the properties before adding the document in the collection

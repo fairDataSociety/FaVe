@@ -124,16 +124,16 @@
       },
       "type": "object"
     },
-    "VectorNearestDocumentsRequest": {
+    "NearestDocumentsByVectorRequest": {
       "description": "Get the nearest documents from the collection by vector",
       "properties": {
         "vector": {
           "description": "The vector to search for",
+          "type": "array",
           "items": {
             "type": "number",
             "format": "float"
-          },
-          "type": "array"
+          }
         },
         "name": {
           "description": "Name of the collection",
@@ -492,7 +492,7 @@
             "name": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/VectorNearestDocumentsRequest"
+              "$ref": "#/definitions/NearestDocumentsByVectorRequest"
             }
           }
         ],

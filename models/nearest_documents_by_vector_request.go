@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// NearestDocumentsByVectorRequest Get the nearest documents from the collection.
+// NearestDocumentsByVectorRequest Get the nearest documents from the collection by vector
 //
 // swagger:model NearestDocumentsByVectorRequest
 type NearestDocumentsByVectorRequest struct {
@@ -23,11 +23,11 @@ type NearestDocumentsByVectorRequest struct {
 	// limit
 	Limit int64 `json:"limit,omitempty" yaml:"limit,omitempty"`
 
-	// Name of the collection as URI relative to the schema URL.
+	// Name of the collection
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	// The vector to search for
-	Vector []float64 `json:"vector" yaml:"vector"`
+	Vector []float32 `json:"vector" yaml:"vector"`
 }
 
 // Validate validates this nearest documents by vector request

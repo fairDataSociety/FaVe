@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// NearestDocumentsRequest Get the nearest documents from the collection.
+// NearestDocumentsRequest Get the nearest documents from the collection by text
 //
 // swagger:model NearestDocumentsRequest
 type NearestDocumentsRequest struct {
