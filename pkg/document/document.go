@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/fairDataSociety/FaVe/pkg/vectorizer/rest"
 	"os"
 	"strings"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
 	"github.com/fairDataSociety/FaVe/pkg/vectorizer"
-	"github.com/fairDataSociety/FaVe/pkg/vectorizer/rest"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/collection"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/dfs"
 	"github.com/fairdatasociety/fairOS-dfs/pkg/logging"
@@ -80,17 +80,14 @@ func New(config Config, api *dfs.API) (*Client, error) {
 	//	client.vectorizer = lkup
 	//}
 
-	if config.VectorizerUrl == "" {
-		logger.Errorf("VECTORIZER_URL environment variable is not set")
+	if config.VectorizerUrl != "" {
+		lkup, err := rest.NewVectorizer(config.VectorizerUrl)
+		if err != nil {
+			logger.Errorf("new vectorizer failed :%s\n", err.Error())
+			return nil, err
+		}
+		client.lookup = lkup
 	}
-
-	// leveldb lookuper
-	lkup, err := rest.NewVectorizer(config.VectorizerUrl)
-	if err != nil {
-		logger.Errorf("new vectorizer failed :%s\n", err.Error())
-		return nil, err
-	}
-	client.lookup = lkup
 	documentCache, err := lru.New(1000)
 	if err == nil {
 		client.documentCache = documentCache
@@ -421,8 +418,17 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), vector)
 
 				indexId++
+			} else if slice, ok := doc.Properties["vector"].([]float32); ok {
+				err = index.Add(indexId, slice)
+				if err != nil {
+					c.logger.Errorf("index.Add failed :%s\n", err.Error())
+					continue
+				}
+				c.documentCache.Add(fmt.Sprintf("%s/%s/%d", c.pod, namespacedCollection, indexId), slice)
+
+				indexId++
 			} else {
-				return fmt.Errorf("vector is not []float32")
+				return fmt.Errorf("vector format is now supported")
 			}
 		} else {
 			// vectorize the properties
@@ -436,6 +442,9 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			}
 
 			if vectorData != "" {
+				if c.lookup == nil {
+					return fmt.Errorf("vectorizer is not initialized")
+				}
 				vector, err := c.lookup.Corpi([]string{vectorData})
 				if err != nil {
 					c.logger.Errorf("corpi failed :%s\n", err.Error())
@@ -543,6 +552,9 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 		if err != nil {
 			return nil, nil, err
 		}
+	}
+	if c.lookup == nil {
+		return nil, nil, fmt.Errorf("vectorizer is not initialized")
 	}
 	vector, err := c.lookup.Corpi([]string{text})
 	if err != nil {
