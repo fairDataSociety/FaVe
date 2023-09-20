@@ -34,32 +34,30 @@ func TestFave(t *testing.T) {
 	dfsApi := dfs.NewMockDfsAPI(mockClient, users, logger)
 	defer dfsApi.Close()
 
-	_, err := dfsApi.CreateUserV2(username, password, ""+
-		"", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := Config{
-		Verbose:       false,
-		VectorizerUrl: "http://localhost:9876",
-	}
-	client, err := New(cfg, dfsApi)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = client.Login(username, password)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = client.OpenPod("Fave")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("test-vectorizer-in-fave", func(t *testing.T) {
+		_, err := dfsApi.CreateUserV2(username, password, ""+
+			"", "")
+		if err != nil {
+			t.Fatal(err)
+		}
 
+		cfg := Config{
+			Verbose:       false,
+			VectorizerUrl: "http://localhost:9876",
+		}
+		client, err := New(cfg, dfsApi)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = client.Login(username, password)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = client.OpenPod("Fave")
+		if err != nil {
+			t.Fatal(err)
+		}
 		file, err := os.Open("./wiki-15.csv")
 		if err != nil {
 			t.Fatal(err)
@@ -244,6 +242,29 @@ func TestFave(t *testing.T) {
 	})
 
 	t.Run("test-vectorizer-out-of-fave", func(t *testing.T) {
+		_, err := dfsApi.CreateUserV2(username+"v", password, ""+
+			"", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cfg := Config{
+			Verbose: false,
+		}
+		client, err := New(cfg, dfsApi)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = client.Login(username+"v", password)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = client.OpenPod("Fave")
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		vctrzr, err := rest.NewVectorizer("http://localhost:9876")
 		if err != nil {
 			t.Fatal(err)
@@ -416,7 +437,7 @@ func TestFave(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = client2.Login(username, password)
+		err = client2.Login(username+"v", password)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -424,19 +445,6 @@ func TestFave(t *testing.T) {
 		err = client2.OpenPod("Fave")
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		docs, dist, err = client2.GetNearDocuments(col.Name, "Bat", 1, 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for i, doc := range docs {
-			props := map[string]interface{}{}
-			err := json.Unmarshal(doc, &props)
-			if err != nil {
-				t.Fatal(err)
-			}
-			fmt.Println("Found:", props["title"], dist[i])
 		}
 
 		colls, err := client2.GetCollections()
