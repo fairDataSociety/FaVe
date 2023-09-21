@@ -206,3 +206,6 @@ Once we have the data in the correct format, we can upload it to FaVe.
 FaVe provides a REST APIs for retrieving nearest documents from a collection, given a query and a maximum distance.
 
 The response contains the nearest documents along with their properties and their distances from the query.
+
+NOTE:
+Please check this [issue](https://github.com/fairDataSociety/FaVe/issues/29) before running the server.
