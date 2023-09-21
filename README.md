@@ -49,7 +49,7 @@ Currently, there are two projects that can be used as vectorizer
 
 - [glove-840B-leveldb](https://github.com/onepeerlabs/glove-840B-leveldb):  GloVe embeddings put inside leveldb.
 
-- [huggingface-embeddings](https://github.com/onepeerlabs/huggingface-embeddings): Any Huggingface transformer can be loaded and served as FaVe vectorizer to generate text to embeddings.
+- [huggingface-embeddings](https://github.com/fairDataSociety/huggingface-embeddings): Any Huggingface transformer can be loaded and served as FaVe vectorizer to generate text to embeddings.
 
 ## Running FaVeDB
 
@@ -76,12 +76,30 @@ Note :
 - PASSWORD is the password of the user you want to use to access the database
 - POD is the reference of the pod you want to use to store the database
 
+`VECTORIZER_URL` is optional in case we want to provide embeddings generated from other sources
+
 Then run the following command
 ```
 go run cmd/fave-server/main.go --port 1234
 ```
 
 ### With Docker
+
+```
+docker run -d --name=fave \
+    -e VERBOSE=true \
+    -e BEE_API=<BEE_API> \
+    -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
+    -e STAMP_ID=<STAMP_ID> \
+    -e USER=<FAIROS_USERNAME> \
+    -e PASSWORD=<FAIROS_PASSWORD> \
+    -e POD=<POD_FOR_STORING_DB> \
+    -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
+    -p 1234:1234 \
+    fairdatasociety/fave:latest --port 1234 —host 0.0.0.0 
+```
+
+Or, you can build the docker image yourself.
 
 ```
 // build 
