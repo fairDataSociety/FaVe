@@ -209,3 +209,55 @@ The response contains the nearest documents along with their properties and thei
 
 NOTE:
 Please check this [issue](https://github.com/fairDataSociety/FaVe/issues/29) before running the server.
+
+## Summary of the OpenAPI Specification
+The `schema.json` file in the `openapi-spec` directory defines the OpenAPI specification for the FaVe project. Here's a summarized overview:
+
+### General Information
+- **Base Path**: `/v1`
+- **Consumes**: `application/json`
+- **Produces**: `application/json`
+- **Swagger Version**: `2.0`
+- **Contact**: `sabyasachi@datafund.io`
+- **Project URL**: [GitHub Repository](https://github.com/fairDataSociety/FaVe)
+- **Version**: `0.0.0-prealpha`
+
+### Definitions
+The schema defines several object types, including:
+- `OKResponse`: A standard OK response.
+- `ErrorResponse`: A standard error response.
+- `Collection`: Represents a collection with a name and indexes.
+- `Index`: Specifies fields to index in a collection.
+- `Property`: An open object with additional properties.
+- `Document`: Represents a document with properties and an ID.
+- `AddDocumentsRequest`: Request object for adding documents to a collection.
+- `NearestDocumentsRequest`: Request object for finding nearest documents by text.
+- `NearestDocumentsByVectorRequest`: Request object for finding nearest documents by vector.
+- `NearestDocumentsResponse`: Response object for nearest documents requests.
+
+### API Endpoints
+1. **Root Endpoint (`/`)**: A GET request returns a 200 status, indicating the API is alive.
+  
+2. **Collections (`/collections`)**:
+    - GET: Retrieve all collections.
+    - POST: Create a new collection.
+
+3. **Specific Collection (`/collections/{collection}`)**:
+    - DELETE: Delete a specific collection.
+
+4. **Documents (`/documents`)**:
+    - GET: Retrieve a document based on query parameters.
+    - POST: Add documents to a collection.
+
+5. **Nearest Documents (`/nearest-documents`)**:
+    - POST: Get nearest documents for a collection based on text.
+
+6. **Nearest Documents by Vector (`/nearest-documents-by-vector`)**:
+    - POST: Get nearest documents for a collection based on a vector.
+
+### Error Responses
+The API has standard error responses like 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 422 (Unprocessable Entity), and 500 (Internal Server Error).
+
+### Tags
+- `fave`: Everything about your fave.
+
