@@ -33,7 +33,7 @@ FaVeDB is a truly decentralised, open source vector database build with Fair Dat
 ```
 
 In the diagram we can see c1, c2, c3, which are collections. We can have multiple collections in a single FaVe instance.
-Collections can have documents with significant "Properties" that can be "vectorized" and stored.
+Collections can have documents with significant "properties" that can be "vectorized" and stored.
 
 The properties of the documents are vectorized and stored in a specific document store in fairOS-dfs named after the 
 collection itself. While adding documents in FaVe we calculate nearest neighbours. These are then stored in a key-value 
@@ -128,7 +128,7 @@ go generate
 
 ## How does FaVeDB work?
 
-FaVe currently supports only test vectorazation.
+FaVe currently supports only test vectorization.
 
 The system first produces vector representations or embeddings from a chosen vectorizer. Following that, 
 it determines the nearest neighbors based on these embeddings. Once this is done, the content gets uploaded, 
