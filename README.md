@@ -1,9 +1,9 @@
 ## FaVe
 [//]: # ([![Website]&#40;https://img.shields.io/badge/website-FAQ-orange?style=for-the-badge&#41;]&#40;https://fairdatasociety.github.io/FaVe/&#41;)
+[//]: # (![Platform]&#40;https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-green?style=for-the-badge&#41;)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fairDataSociety/FaVe?style=for-the-badge)](https://goreportcard.com/report/github.com/fairDataSociety/FaVe)
 [![Release](https://img.shields.io/github/v/release/fairDataSociety/FaVe?include_prereleases&style=for-the-badge)](https://github.com/fairDataSociety/FaVe/releases)
 ![GitHub all releases](https://img.shields.io/github/downloads/fairDataSociety/FaVe/total?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-green?style=for-the-badge)
 [![Workflow](https://img.shields.io/github/actions/workflow/status/fairDataSociety/FaVe/release.yaml?branch=master&style=for-the-badge)](https://github.com/fairDataSociety/FaVe/actions)
 [![Issues](https://img.shields.io/github/issues-raw/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/issues)
 [![Closed](https://img.shields.io/github/issues-closed-raw/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/issues?q=is%3Aissue+is%3Aclosed)
