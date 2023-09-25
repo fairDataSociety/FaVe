@@ -22,7 +22,7 @@ type vertex struct {
 	Level       int        `json:"level"`
 	Connections [][]uint64 `json:"connections"`
 	Maintenance bool       `json:"maintenance"`
-	Committed   bool       `json:"committed"`
+	Committed   bool       `json:"-"`
 }
 
 func (v *vertex) markAsMaintenance() {

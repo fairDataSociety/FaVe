@@ -23,8 +23,17 @@ import (
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
 )
 
+const (
+	entrypointKey = "entrypoint"
+	countKey      = "count"
+)
+
 type entrypoint struct {
 	ID uint64 `json:"id"`
+}
+
+type count struct {
+	Count uint64 `json:"count"`
 }
 
 func (h *hnsw) ValidateBeforeInsert(vector []float32) error {
@@ -113,7 +122,7 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 	return nil
 }
 
-func (h *hnsw) Flush() error {
+func (h *hnsw) Flush(docCount uint64) error {
 	keys := h.indexCache.Keys()
 	for _, key := range keys {
 		iNode, ok := h.indexCache.Get(key)
@@ -142,19 +151,45 @@ func (h *hnsw) Flush() error {
 	if err != nil {
 		return errors.Wrapf(err, "marshal entrypoint %d", h.entryPointID)
 	}
-	err = h.nodes.KVPut(h.className, "entrypoint", epBytes)
+	err = h.nodes.KVPut(h.className, entrypointKey, epBytes)
 	if err != nil {
 		return errors.Wrapf(err, "put entrypoint %d", h.entryPointID)
 	}
 
+	c := &count{
+		Count: docCount,
+	}
+	cBytes, err := json.Marshal(c)
+	if err != nil {
+		return errors.Wrapf(err, "marshal count %d", h.entryPointID)
+	}
+	err = h.nodes.KVPut(h.className, countKey, cBytes)
+	if err != nil {
+		return errors.Wrapf(err, "put count %d", h.entryPointID)
+	}
 	return h.commitLog.Flush()
+}
+
+func (h *hnsw) GetDocCount() (uint64, error) {
+	_, cBytes, err := h.nodes.KVGet(h.className, countKey)
+	if err != nil {
+		return 0, errors.Wrapf(err, "put count %d", h.entryPointID)
+	}
+
+	c := &count{}
+	err = json.Unmarshal(cBytes, c)
+	if err != nil {
+		return 0, err
+	}
+
+	return c.Count, nil
 }
 
 func (h *hnsw) LoadEntrypoint() error {
 	h.RLock()
 	defer h.RUnlock()
 
-	_, v, err := h.nodes.KVGet(h.className, "entrypoint")
+	_, v, err := h.nodes.KVGet(h.className, entrypointKey)
 	if err != nil {
 		h.entryPointID = 0
 		return nil
