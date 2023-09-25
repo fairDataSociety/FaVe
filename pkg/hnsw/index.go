@@ -182,7 +182,8 @@ type CommitLogger interface {
 }
 
 type VectorIndex interface {
-	Flush() error
+	Flush(docCount uint64) error
+	GetDocCount() (uint64, error)
 	LoadEntrypoint() error
 	Add(id uint64, vector []float32) error
 	KnnSearchByVectorMaxDist(query []float32, dist float32, ef int,

@@ -374,13 +374,13 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 	c.hnswLock.Lock()
 	index := c.indices[namespacedCollection]
 	c.hnswLock.Unlock()
-	count, err := c.api.KVCount(c.sessionId, c.pod, namespacedCollection)
+	count, err := index.GetDocCount()
 	if err != nil {
-		return err
+		count = 0
 	}
 
-	indexId := count.Count
-	for id, doc := range documents {
+	indexId := count
+	for _, doc := range documents {
 		doc.Properties["id"] = doc.ID
 
 		//check if vector is already present in the properties
@@ -478,10 +478,10 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error(), doc.Properties)
 			return err
 		}
-		fmt.Println("added document", id)
+		fmt.Println("added document", indexId)
 	}
 
-	return index.Flush()
+	return index.Flush(indexId)
 }
 
 func (c *Client) GetNearDocuments(collection, text string, distance float32, limit int) ([][]byte, []float32, error) {

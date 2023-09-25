@@ -453,6 +453,282 @@ func TestFave(t *testing.T) {
 		}
 		fmt.Println("Collections:", colls[0].Name)
 	})
+
+	t.Run("test-vectorizer-in-fave-add-to-collection-multiple-times", func(t *testing.T) {
+		_, err := dfsApi.CreateUserV2(username, password, ""+
+			"", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cfg := Config{
+			Verbose:       false,
+			VectorizerUrl: "http://localhost:9876",
+		}
+		client, err := New(cfg, dfsApi)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = client.Login(username, password)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = client.OpenPod("Fave")
+		if err != nil {
+			t.Fatal(err)
+		}
+		file, err := os.Open("./wiki-100.csv")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+
+		// Create a CSV reader
+		reader := csv.NewReader(file)
+
+		// Read all records from the CSV file
+		records, err := reader.ReadAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		documents, err := generateDocuments(records)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		col := &Collection{
+			Name: "Wiki",
+			Indexes: map[string]collection.IndexType{
+				"title":   collection.StringIndex,
+				"rawText": collection.StringIndex,
+			},
+		}
+
+		err = client.CreateCollection(col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		//fmt.Println(len(documents))
+		//err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents[0:10]...)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		//fmt.Println("Added 10 documents")
+		//err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents[10:]...)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		for i := 0; i < 10; i++ {
+			err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents[i*10:(i*10)+10]...)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents[100:]...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		//// adding second time
+		//documents, err = generateDocuments(records)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		//
+		//err = client.AddDocuments(col.Name, []string{"title", "rawText"}, documents...)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+
+		for i, _ := range documents {
+			s, v, err := dfsApi.KVGet(client.sessionId, client.pod, namespace+col.Name, fmt.Sprintf("%d", i))
+			if err != nil {
+				t.Log(i, err)
+			}
+			fmt.Println(s, string(v))
+		}
+
+		//expr := fmt.Sprintf("%s=%d", "hnswId", 13)
+		//docs, err := client.api.DocFind(client.sessionId, client.pod, col.Name, expr, 1)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		//if len(docs) > 0 {
+		//	doc := docs[0]
+		//	data := map[string]interface{}{}
+		//	err = json.Unmarshal(doc, &data)
+		//	if err != nil {
+		//		t.Fatal(err)
+		//	}
+		//	fmt.Println("Found:", data["vector"])
+		//	fmt.Println("Found:", data["id"])
+		//	fmt.Println("Found:", data["title"])
+		//} else {
+		//	fmt.Println("Not found")
+		//}
+
+		//for id, _ := range records {
+		//expr := fmt.Sprintf("%s=%d", "hnswId", 14)
+		//docs, err := client.api.DocFind(client.sessionId, client.pod, col.Name, expr, 1)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		//if len(docs) > 0 {
+		//	doc := docs[0]
+		//	data := map[string]interface{}{}
+		//	err = json.Unmarshal(doc, &data)
+		//	if err != nil {
+		//		t.Fatal(err)
+		//	}
+		//	fmt.Println("Found:", data["vector"])
+		//	fmt.Println("Found:", data["id"])
+		//	fmt.Println("Found:", data["title"])
+		//} else {
+		//	fmt.Println("Not found")
+		//}
+		//}
+
+		//look for documents
+		//for _, record := range records {
+		//	fmt.Println("Searching for:", record[0])
+		//	// Test search
+		//	docs, dist, err := client.GetNearDocuments(col.Name, record[0], 1)
+		//	if err != nil {
+		//		t.Fatal(err)
+		//	}
+		//	for i, doc := range docs {
+		//		props := map[string]interface{}{}
+		//		err := json.Unmarshal(doc, &props)
+		//		if err != nil {
+		//			t.Fatal(err)
+		//		}
+		//		fmt.Println("Found:", props["title"], dist[i])
+		//	}
+		//	fmt.Println("=====================================")
+		//}
+
+		//for _, record := range records {
+		//	fmt.Println("Searching for:", record[0])
+		//	// Test search
+		//	docs, _, err := client.GetNearDocuments(col.Name, record[0], 1)
+		//	if err != nil {
+		//		t.Fatal(err)
+		//	}
+		//	if len(docs) == 0 {
+		//		t.Log("No documents found for", record[0])
+		//	} else {
+		//		props := map[string]interface{}{}
+		//		err := json.Unmarshal(docs[0], &props)
+		//		if err != nil {
+		//			t.Fatal(err)
+		//		}
+		//		if props["title"] != record[0] {
+		//			t.Log("Found:", props["title"], "Expected:", record[0])
+		//		}
+		//	}
+		//
+		//}
+
+		fmt.Println("===================================== mammals with true flight")
+		docs, dist, err := client.GetNearDocuments(col.Name, "mammals with true flight", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found:", props["title"], dist[i])
+		}
+		fmt.Println("===================================== largest living cat")
+		docs, dist, err = client.GetNearDocuments(col.Name, "largest living cat", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found:", props["title"], dist[i])
+		}
+		fmt.Println("===================================== Tiger")
+		docs, dist, err = client.GetNearDocuments(col.Name, "Tiger", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found:", props["title"], dist[i])
+		}
+		fmt.Println("===================================== dark vertical stripes on orange")
+		docs, dist, err = client.GetNearDocuments(col.Name, "dark vertical stripes on orange", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found:", props["title"], dist[i])
+		}
+
+		client2, err := New(cfg, dfsApi)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = client2.Login(username, password)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = client2.OpenPod("Fave")
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("===================================== 2 mammals with true flight")
+		docs, dist, err = client2.GetNearDocuments(col.Name, "mammals with true flight", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found: ", props["title"], dist[i])
+		}
+		fmt.Println("===================================== 2 largest living cat")
+		docs, dist, err = client2.GetNearDocuments(col.Name, "largest living cat", 1, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, doc := range docs {
+			props := map[string]interface{}{}
+			err := json.Unmarshal(doc, &props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println("Found: ", props["title"], dist[i])
+		}
+
+		colls, err := client2.GetCollections()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println("Collections:", colls[0].Name)
+	})
 }
 
 func generateDocuments(records [][]string) ([]*Document, error) {

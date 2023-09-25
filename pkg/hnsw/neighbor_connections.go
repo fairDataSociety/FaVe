@@ -151,6 +151,7 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 
 	neighbor.Lock()
 	defer neighbor.Unlock()
+	neighbor.Committed = false
 	if level > neighbor.Level {
 		// upgrade neighbor Level if the Level is out of sync due to a delete re-assign
 		neighbor.upgradeToLevelNoLock(level)
@@ -162,16 +163,8 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 		// we can simply append
 		// updatedConnections = append(currentConnections, n.node.ID)
 		neighbor.appendConnectionAtLevelNoLock(level, n.node.Id, maximumConnections)
-		n.graph.indexCache.Add(n.node.Id, neighbor)
+		n.graph.indexCache.Add(neighbor.Id, neighbor)
 
-		//neighborBytes, err := json.Marshal(neighbor)
-		//if err != nil {
-		//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-		//}
-		//err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
-		//if err != nil {
-		//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-		//}
 		if err := n.graph.commitLog.AddLinkAtLevel(neighbor.Id, level, n.node.Id); err != nil {
 			return err
 		}
@@ -219,7 +212,7 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 		for candidates.Len() > 0 {
 			id := candidates.Pop().ID
 			neighbor.appendConnectionAtLevelNoLock(level, id, maximumConnections)
-			n.graph.indexCache.Add(n.node.Id, neighbor)
+			n.graph.indexCache.Add(neighbor.Id, neighbor)
 			//neighborBytes, err := json.Marshal(neighbor)
 			//if err != nil {
 			//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
