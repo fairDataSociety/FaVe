@@ -14,7 +14,7 @@
 [![Telegram](https://img.shields.io/badge/-telegram-red?color=86d5f7&logo=telegram&style=for-the-badge)](https://t.me/joinchat/GCEfnpZbpfZgVyoK)
 [![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg?style=for-the-badge)](https://opensource.org/license/agpl-v3/)
 
-FaVeDB is a truly decentralised, open source vector database build with Fair Data Principals in mind on top of FairOS. 
+FaVe is a truly decentralised, open source vector database build with Fair Data Principals in mind on top of FairOS. 
 
 ## Architecture
 
