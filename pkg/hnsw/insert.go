@@ -64,8 +64,6 @@ func (h *hnsw) Add(id uint64, vector []float32) error {
 		vector = distancer.Normalize(vector)
 	}
 
-	h.compressActionLock.RLock()
-	defer h.compressActionLock.RUnlock()
 	return h.insert(node, vector)
 }
 
@@ -101,13 +99,8 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 	//if err != nil {
 	//	return errors.Wrapf(err, "put node %d", node.Id)
 	//}
-	if h.compressed.Load() {
-		compressed := h.pq.Encode(nodeVec)
-		h.storeCompressedVector(node.Id, compressed)
-		h.compressedVectorsCache.preload(node.Id, compressed)
-	} else {
-		h.cache.preload(node.Id, nodeVec)
-	}
+
+	h.cache.preload(node.Id, nodeVec)
 
 	// go h.insertHook(node.ID, 0, node.Connections)
 	return nil
@@ -232,13 +225,7 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 
 	// // make sure this new vec is immediately present in the cache, so we don't
 	// // have to read it from disk again
-	if h.compressed.Load() {
-		compressed := h.pq.Encode(nodeVec)
-		h.storeCompressedVector(node.Id, compressed)
-		h.compressedVectorsCache.preload(node.Id, compressed)
-	} else {
-		h.cache.preload(node.Id, nodeVec)
-	}
+	h.cache.preload(node.Id, nodeVec)
 
 	h.indexCache.Add(node.Id, node)
 

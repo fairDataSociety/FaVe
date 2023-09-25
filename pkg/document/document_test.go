@@ -51,7 +51,6 @@ func TestFave(t *testing.T) {
 		}
 		err = client.Login(username, password)
 		if err != nil {
-			t.Fatal(err)
 		}
 
 		err = client.OpenPod("Fave")

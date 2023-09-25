@@ -20,7 +20,6 @@ import (
 	"math"
 	"math/rand"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
@@ -28,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/weaviate/weaviate/adapters/repos/db/helpers"
-	"github.com/weaviate/weaviate/adapters/repos/db/lsmkv"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/hnsw/distancer"
 	"github.com/weaviate/weaviate/adapters/repos/db/vector/ssdhelpers"
 	"github.com/weaviate/weaviate/entities/cyclemanager"
@@ -148,13 +146,8 @@ type hnsw struct {
 	// negative impact on performance.
 	deleteVsInsertLock sync.RWMutex
 
-	compressed             atomic.Bool
-	pq                     *ssdhelpers.ProductQuantizer
-	compressedVectorsCache cache[byte]
-	compressedStore        *lsmkv.Store
-	compressActionLock     *sync.RWMutex
-	className              string
-	shardName              string
+	className string
+	shardName string
 
 	indexCache *lru.Cache
 }
@@ -231,7 +224,6 @@ func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error)
 	vectorCache := newShardedLockCache(cfg.VectorForIDThunk, uc.VectorCacheMaxObjects,
 		cfg.Logger, normalizeOnRead, defaultDeletionInterval)
 
-	compressedVectorsCache := newCompressedShardedLockCache(uc.VectorCacheMaxObjects, cfg.Logger)
 	resetCtx, resetCtxCancel := context.WithCancel(context.Background())
 	index := &hnsw{
 		maximumConnections: uc.MaxConnections,
@@ -240,26 +232,25 @@ func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error)
 		maximumConnectionsLayerZero: 2 * uc.MaxConnections,
 
 		// inspired by c++ implementation
-		levelNormalizer:        1 / math.Log(float64(uc.MaxConnections)),
-		efConstruction:         uc.EFConstruction,
-		flatSearchCutoff:       int64(uc.FlatSearchCutoff),
-		nodes:                  kvStore,
-		cache:                  vectorCache,
-		vectorForID:            vectorCache.get,
-		multiVectorForID:       vectorCache.multiGet,
-		compressedVectorsCache: compressedVectorsCache,
-		id:                     cfg.ID,
-		rootPath:               cfg.RootPath,
-		tombstones:             map[uint64]struct{}{},
-		logger:                 cfg.Logger,
-		distancerProvider:      cfg.DistanceProvider,
-		deleteLock:             &sync.Mutex{},
-		tombstoneLock:          &sync.RWMutex{},
-		resetLock:              &sync.Mutex{},
-		resetCtx:               resetCtx,
-		resetCtxCancel:         resetCtxCancel,
-		initialInsertOnce:      &sync.Once{},
-		cleanupInterval:        time.Duration(uc.CleanupIntervalSeconds) * time.Second,
+		levelNormalizer:   1 / math.Log(float64(uc.MaxConnections)),
+		efConstruction:    uc.EFConstruction,
+		flatSearchCutoff:  int64(uc.FlatSearchCutoff),
+		nodes:             kvStore,
+		cache:             vectorCache,
+		vectorForID:       vectorCache.get,
+		multiVectorForID:  vectorCache.multiGet,
+		id:                cfg.ID,
+		rootPath:          cfg.RootPath,
+		tombstones:        map[uint64]struct{}{},
+		logger:            cfg.Logger,
+		distancerProvider: cfg.DistanceProvider,
+		deleteLock:        &sync.Mutex{},
+		tombstoneLock:     &sync.RWMutex{},
+		resetLock:         &sync.Mutex{},
+		resetCtx:          resetCtx,
+		resetCtxCancel:    resetCtxCancel,
+		initialInsertOnce: &sync.Once{},
+		cleanupInterval:   time.Duration(uc.CleanupIntervalSeconds) * time.Second,
 
 		ef:       int64(uc.EF),
 		efMin:    int64(uc.DynamicEFMin),
@@ -269,9 +260,8 @@ func New(cfg Config, uc UserConfig, kvStore *collection.KeyValue) (*hnsw, error)
 		metrics:   NewMetrics(cfg.PrometheusMetrics, cfg.ClassName, cfg.ShardName),
 		shardName: cfg.ShardName,
 
-		randFunc:           rand.Float64,
-		compressActionLock: &sync.RWMutex{},
-		className:          cfg.ClassName,
+		randFunc:  rand.Float64,
+		className: cfg.ClassName,
 
 		indexCache: indexCache,
 	}
@@ -434,41 +424,6 @@ func min(a, b int) int {
 }
 
 func (h *hnsw) distBetweenNodes(a, b uint64) (float32, bool, error) {
-	if h.compressed.Load() {
-		v1, err := h.compressedVectorsCache.get(context.Background(), a)
-		if err != nil {
-			var e storobj.ErrNotFound
-			if errors.As(err, &e) {
-				h.handleDeletedNode(e.DocID)
-				return 0, false, nil
-			} else {
-				// not a typed error, we can recover from, return with err
-				return 0, false, errors.Wrapf(err,
-					"could not get vector of object at docID %d", a)
-			}
-		}
-		if len(v1) == 0 {
-			return 0, false, fmt.Errorf("got a nil or zero-length vector at docID %d", a)
-		}
-
-		v2, err := h.compressedVectorsCache.get(context.Background(), b)
-		if err != nil {
-			var e storobj.ErrNotFound
-			if errors.As(err, &e) {
-				h.handleDeletedNode(e.DocID)
-				return 0, false, nil
-			} else {
-				// not a typed error, we can recover from, return with err
-				return 0, false, errors.Wrapf(err,
-					"could not get vector of object at docID %d", a)
-			}
-		}
-		if len(v2) == 0 {
-			return 0, false, fmt.Errorf("got a nil or zero-length vector at docID %d", b)
-		}
-
-		return h.pq.DistanceBetweenCompressedVectors(v1, v2), true, nil
-	}
 	// TODO: introduce single search/transaction context instead of spawning new
 	// ones
 	vecA, err := h.vectorForID(context.Background(), a)
@@ -509,25 +464,6 @@ func (h *hnsw) distBetweenNodes(a, b uint64) (float32, bool, error) {
 }
 
 func (h *hnsw) distBetweenNodeAndVec(node uint64, vecB []float32) (float32, bool, error) {
-	if h.compressed.Load() {
-		v1, err := h.compressedVectorsCache.get(context.Background(), node)
-		if err != nil {
-			var e storobj.ErrNotFound
-			if errors.As(err, &e) {
-				h.handleDeletedNode(e.DocID)
-				return 0, false, nil
-			} else {
-				// not a typed error, we can recover from, return with err
-				return 0, false, errors.Wrapf(err,
-					"could not get vector of object at docID %d", node)
-			}
-		}
-		if len(v1) == 0 {
-			return 0, false, fmt.Errorf("got a nil or zero-length vector at docID %d", node)
-		}
-
-		return h.pq.DistanceBetweenCompressedAndUncompressedVectors(vecB, v1), true, nil
-	}
 	// TODO: introduce single search/transaction context instead of spawning new
 	// ones
 	vecA, err := h.vectorForID(context.Background(), node)
@@ -644,12 +580,7 @@ func (h *hnsw) Drop(ctx context.Context) error {
 		}
 	}
 
-	if h.compressed.Load() {
-		h.compressedVectorsCache.drop()
-	} else {
-		// cancel vector cache goroutine
-		h.cache.drop()
-	}
+	h.cache.drop()
 
 	// cancel commit logger last, as the tombstone cleanup cycle might still
 	// write while it's still running
@@ -670,14 +601,7 @@ func (h *hnsw) Shutdown(ctx context.Context) error {
 		return errors.Wrap(err, "hnsw shutdown")
 	}
 
-	if h.compressed.Load() {
-		h.compressedVectorsCache.drop()
-		if err := h.compressedStore.Shutdown(ctx); err != nil {
-			return errors.Wrap(err, "hnsw shutdown")
-		}
-	} else {
-		h.cache.drop()
-	}
+	h.cache.drop()
 
 	return nil
 }

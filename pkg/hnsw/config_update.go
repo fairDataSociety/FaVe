@@ -91,37 +91,7 @@ func (h *hnsw) UpdateUserConfig(updated schema.VectorIndexConfig, callback func(
 	atomic.StoreInt64(&h.efFactor, int64(parsed.DynamicEFFactor))
 	atomic.StoreInt64(&h.flatSearchCutoff, int64(parsed.FlatSearchCutoff))
 
-	if h.compressed.Load() {
-		h.compressedVectorsCache.updateMaxSize(int64(parsed.VectorCacheMaxObjects))
-	} else {
-		h.cache.updateMaxSize(int64(parsed.VectorCacheMaxObjects))
-	}
-	// ToDo: check atomic operation
-	if !h.compressed.Load() && parsed.PQ.Enabled {
-		h.logger.WithField("action", "compress").Info("switching to compressed vectors")
-
-		encoder, err := ent.ValidEncoder(parsed.PQ.Encoder.Type)
-		if err != nil {
-			callback()
-			return err
-		}
-		encoderDistribution, err := ent.ValidEncoderDistribution(parsed.PQ.Encoder.Distribution)
-		if err != nil {
-			callback()
-			return err
-		}
-
-		go func() {
-			if err := h.Compress(parsed.PQ.Segments, parsed.PQ.Centroids, parsed.PQ.BitCompression, int(encoder), int(encoderDistribution)); err != nil {
-				h.logger.Error(err)
-				h.logger.Error(err)
-				callback()
-				return
-			}
-			h.logger.WithField("action", "compress").Info("vector compression complete")
-			callback()
-		}()
-	}
+	h.cache.updateMaxSize(int64(parsed.VectorCacheMaxObjects))
 
 	callback()
 	return nil

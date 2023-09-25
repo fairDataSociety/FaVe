@@ -13,11 +13,9 @@ package hnsw
 
 import (
 	"context"
-	"encoding/binary"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/weaviate/weaviate/adapters/repos/db/helpers"
 	"github.com/weaviate/weaviate/entities/cyclemanager"
 )
 
@@ -166,29 +164,12 @@ func (h *hnsw) PostStartup() {
 }
 
 func (h *hnsw) prefillCache() {
-	limit := 0
-	if h.compressed.Load() {
-		limit = int(h.compressedVectorsCache.copyMaxSize())
-	} else {
-		limit = int(h.cache.copyMaxSize())
-	}
+	limit := int(h.cache.copyMaxSize())
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 		defer cancel()
-
-		var err error
-		if h.compressed.Load() {
-			cursor := h.compressedStore.Bucket(helpers.CompressedObjectsBucketLSM).Cursor()
-			for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-				id := binary.LittleEndian.Uint64(k)
-				h.compressedVectorsCache.grow(id)
-				h.compressedVectorsCache.preload(id, v)
-			}
-			cursor.Close()
-		} else {
-			err = newVectorCachePrefiller(h.cache, h, h.logger).Prefill(ctx, limit)
-		}
+		err := newVectorCachePrefiller(h.cache, h, h.logger).Prefill(ctx, limit)
 
 		if err != nil {
 			h.logger.WithError(err).Error("prefill vector cache")

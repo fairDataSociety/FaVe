@@ -9,6 +9,40 @@ before:
   hooks:
     - go mod download
 builds:
+  - id: fave-darwin-amd64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    env:
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/fairDataSociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairDataSociety/FaVe.version={{ .Version }}
+  - id: fave-darwin-arm64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/fairDataSociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairDataSociety/FaVe.version={{ .Version }}
   - id: fave-linux-amd64
     main: ./cmd/fave-server
     binary: fave
@@ -24,8 +58,8 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
-      - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
+      - -X github.com/fairDataSociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairDataSociety/FaVe.version={{ .Version }}
   - id: fave-linux-arm64
     main: ./cmd/fave-server
     binary: fave
@@ -41,19 +75,30 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/fairdatasociety/FaVe.commit={{ .ShortCommit }}
-      - -X github.com/fairdatasociety/FaVe.version={{ .Version }}
-
+      - -X github.com/fairDataSociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairDataSociety/FaVe.version={{ .Version }}
+  - id: fave-windows-amd64
+    main: ./cmd/fave-server
+    binary: fave
+    goos:
+      - windows
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
+    flags:
+      - -v
+      - -trimpath
+      - -buildmode=exe
+    ldflags:
+      - -s -w
+      - -X github.com/fairDataSociety/FaVe.commit={{ .ShortCommit }}
+      - -X github.com/fairDataSociety/FaVe.version={{ .Version }}
 archives:
   - id: binary-version
     name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     format: binary
-  - id: binary
-    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
-    format: binary
-  - id: zip
-    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
-    format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
