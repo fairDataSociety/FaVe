@@ -62,7 +62,7 @@ Note :
 
 Then run the following command
 ```
-go run cmd/fave-server/main.go --port 1234
+go run cmd/fave-server/main.go --port 1234 --keep-alive 6000m --write-timeout 6000m --read-timeout 6000m
 ```
 
 ### With Docker
@@ -78,7 +78,7 @@ docker run -d \
     -e POD=<POD_FOR_STORING_DB> \
     -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
     -p 1234:1234 \
-    fairdatasociety/fave:latest --port 1234 --host 0.0.0.0 
+    fairdatasociety/fave:latest --port 1234 --host 0.0.0.0 --keep-alive 6000m --write-timeout 6000m --read-timeout 6000m
 ```
 
 Or, you can build the docker image yourself.
@@ -98,7 +98,7 @@ docker run -d \
     -e POD=<POD_FOR_STORING_DB> \
     -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
     -p 1234:1234 \
-    fds/fave --port 1234 --host 0.0.0.0 
+    fds/fave --port 1234 --host 0.0.0.0 --keep-alive 6000m --write-timeout 6000m --read-timeout 6000m
 
 ```
 
