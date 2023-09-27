@@ -65,7 +65,7 @@ Currently, there are two projects that can be used as vectorizer
 
 - [huggingface-embeddings](https://github.com/fairDataSociety/huggingface-embeddings): Any Huggingface transformer can be loaded and served as FaVe vectorizer to generate text to embeddings.
 
-## Running FaVeDB
+## Running FaVe
 
 ### From Source
 Export the following from your terminal
@@ -100,7 +100,7 @@ go run cmd/fave-server/main.go --port 1234
 ### With Docker
 
 ```
-docker run -d --name=fave \
+docker run -d \
     -e VERBOSE=true \
     -e BEE_API=<BEE_API> \
     -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
@@ -110,7 +110,7 @@ docker run -d --name=fave \
     -e POD=<POD_FOR_STORING_DB> \
     -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
     -p 1234:1234 \
-    fairdatasociety/fave:latest --port 1234 —host 0.0.0.0 
+    fairdatasociety/fave:latest --port 1234 --host 0.0.0.0 
 ```
 
 Or, you can build the docker image yourself.
@@ -120,7 +120,7 @@ Or, you can build the docker image yourself.
 docker build -t fds/fave .
 
 // run
-docker run -d --name=fave \
+docker run -d \
     -e VERBOSE=true \
     -e BEE_API=<BEE_API> \
     -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
@@ -130,7 +130,7 @@ docker run -d --name=fave \
     -e POD=<POD_FOR_STORING_DB> \
     -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
     -p 1234:1234 \
-    fds/fave --port 1234 —host 0.0.0.0 
+    fds/fave --port 1234 --host 0.0.0.0 
 
 ```
 
@@ -140,7 +140,7 @@ docker run -d --name=fave \
 go generate
 ```
 
-## How does FaVeDB work?
+## How does FaVe work?
 
 FaVe currently supports only test vectorization.
 
@@ -151,7 +151,7 @@ and subsequently, the information about the nearest neighbors is also uploaded.
 When conducting a search for a particular term, it computes the distance from a designated starting point and 
 then searches for a match within the precomputed nearest neighbors.
 
-## How to put data in FaVeDB?
+## How to put data in FaVe?
 
 FaVe utilizes fairOS internally, meaning it's embedded directly rather than through REST APIs. 
 FaVe itself offers a set of REST APIs for various functions.
@@ -215,7 +215,7 @@ Properties are the features of the document. They should contain key and value p
 
 Once we have the data in the correct format, we can upload it to FaVe.
 
-## How to search in FaVeDB?
+## How to search in FaVe?
 
 FaVe provides a REST APIs for retrieving nearest documents from a collection, given a query and a maximum distance.
 

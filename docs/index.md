@@ -1,154 +1,184 @@
-# FaVeDB (FairOS vector database)
+# FaVe (`Fa`irOS `Ve`ctor store)
 
-FairOS vector database is a vector database build on top of fairOS-dfs technologies. 
+[![Go Report Card](https://goreportcard.com/badge/github.com/fairDataSociety/FaVe?style=for-the-badge)](https://goreportcard.com/report/github.com/fairDataSociety/FaVe)
+[![Release](https://img.shields.io/github/v/release/fairDataSociety/FaVe?include_prereleases&style=for-the-badge)](https://github.com/fairDataSociety/FaVe/releases)
+![GitHub all releases](https://img.shields.io/github/downloads/fairDataSociety/FaVe/total?style=for-the-badge)
+[![Workflow](https://img.shields.io/github/actions/workflow/status/fairDataSociety/FaVe/release.yaml?branch=master&style=for-the-badge)](https://github.com/fairDataSociety/FaVe/actions)
+[![Issues](https://img.shields.io/github/issues-raw/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/issues)
+[![Closed](https://img.shields.io/github/issues-closed-raw/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/issues?q=is%3Aissue+is%3Aclosed)
+[![PRs](https://img.shields.io/github/issues-pr/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/pulls)
+[![PRClosed](https://img.shields.io/github/issues-pr-closed-raw/fairDataSociety/FaVe?style=for-the-badge)](https://github.com/fairDataSociety/FaVe/pulls?q=is%3Apr+is%3Aclosed)
+![Go](https://img.shields.io/github/go-mod/go-version/fairDataSociety/FaVe?style=for-the-badge&logo=go)
+[![Discord](https://img.shields.io/discord/888359049551310869?style=for-the-badge&logo=discord)](https://discord.com/invite/KrVTmahcUA)
+[![Telegram](https://img.shields.io/badge/-telegram-red?color=86d5f7&logo=telegram&style=for-the-badge)](https://t.me/joinchat/GCEfnpZbpfZgVyoK)
+[![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg?style=for-the-badge)](https://opensource.org/license/agpl-v3/)
 
-> **_IMPORTANT:_**  FaVeDB is under heavy development and in BETA stage. Some abnormal behaviour, data loss can be observed. We do not recommend parallel usage of same account from multiple installations. Doing so might corrupt your data.
 
-## How do I install FaVeDB?
+FaVe is a truly decentralised, open source vector database build with Fair Data Principals in mind on top of FairOS.
+
+> **_IMPORTANT:_**  FaVe is under heavy development and in early BETA stage. Some abnormal behaviour, data loss can be observed. We do not recommend parallel usage of same account from multiple installations. Doing so might corrupt your data.
+
+## How do I install FaVe?
 
 ## Prerequisites And Requirements
 
-### FUSE
-
-You need [FUSE](http://github.com/libfuse/libfuse) for your OS.
-
-##### Installing fuse on macOS
-```
-brew install macfuse
-```
-
-##### Installing fuse on debian
-```
-sudo apt-get update
-sudo apt-get -qq install libfuse-dev
-```
-
-##### Installing fuse on Windows
-install [winfsp](https://winfsp.dev/rel/)
+### Docker
+You can get docker from [here](https://docs.docker.com/get-docker/)
 
 ### BEE
 You will need a bee node running with a valid stamp id.
 
 We encourage `Swarm Desktop` for setting up your bee node. Here is a [guide](https://medium.com/ethereum-swarm/upgrading-swarm-deskotp-app-beta-from-an-ultra-light-to-a-light-node-65d52cab7f2c) for it.
 
-### Install FDA
+### FDP account
+You will need a FDP/Fairdrive account to use FaVe. You can create one from [here](https://create-account.fairdatasociety.org/)
 
-Download FDA for your operating system
-from [Releases](https://github.com/fairDataSociety/fairdrive-desktop-app/releases) Page
+## Running FaVe
 
-[MacOS (intel/amd64)](https://github.com/fairDataSociety/fairdrive-desktop-app/releases/download/v0.1.0/fairdrive_darwin_intel.dmg)
+### From Source
+Export the following from your terminal
+```
+export VERBOSE=                       
+export BEE_API=
+export RPC_API=
+export STAMP_ID=
+export VECTORIZER_URL=
+export USER=
+export PASSWORD=
+export POD=
+```
 
-[MacOS (arm64)](https://github.com/fairDataSociety/fairdrive-desktop-app/releases/download/v0.1.0/fairdrive_darwin_silicon.dmg)
+Note :
+- VERBOSE is optional
+- BEE_API is the url of the bee node
+- RPC_API is the url of the ethereum (Sepolia for testnet) node for ENS authentication
+- STAMP_ID is the id of the stamp you want to use uploading data into swarm
+- VECTORIZER_URL is the vectorizer server url
+- USER is the username of the user you want to use to access the database
+- PASSWORD is the password of the user you want to use to access the database
+- POD is the reference of the pod you want to use to store the database
 
-[Linux](https://github.com/fairDataSociety/fairdrive-desktop-app/releases/download/v0.1.0/fairdrive_linux)
+`VECTORIZER_URL` is optional in case we want to provide embeddings generated from other sources
 
-[Windows](https://github.com/fairDataSociety/fairdrive-desktop-app/releases/download/v0.1.0/fairdrive_windows.exe)
+Then run the following command
+```
+go run cmd/fave-server/main.go --port 1234
+```
 
-# How do I configure FDA to connect to a bee node?
+### With Docker
 
-![settings](https://user-images.githubusercontent.com/15252513/208560029-91046faf-7740-494c-8c84-df1597931001.gif)
+```
+docker run -d \
+    -e VERBOSE=true \
+    -e BEE_API=<BEE_API> \
+    -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
+    -e STAMP_ID=<STAMP_ID> \
+    -e USER=<FAIROS_USERNAME> \
+    -e PASSWORD=<FAIROS_PASSWORD> \
+    -e POD=<POD_FOR_STORING_DB> \
+    -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
+    -p 1234:1234 \
+    fairdatasociety/fave:latest --port 1234 --host 0.0.0.0 
+```
 
-## FAQ about FDA preferences/settings
-#### `Simple` vs `Advanced` mode
+Or, you can build the docker image yourself.
 
-- In `Simple` mode you have to deal with fewer configurations. You do not have to configure any RPC endpoint for portable account.
-- `Advanced` mode is for users, who have their own RPC fow ENS based authentication. Users can use [gateway-proxy](https://github.com/ethersphere/gateway-proxy) service with FDA.
+```
+// build 
+docker build -t fds/fave .
 
-> **_NOTE:_**  If you use `Simple` mode you just have to set `bee` api endpoint and `batchID`.
+// run
+docker run -d \
+    -e VERBOSE=true \
+    -e BEE_API=<BEE_API> \
+    -e RPC_API=<RPC_ENDPOINT_FOR_ENS_AUTH> \
+    -e STAMP_ID=<STAMP_ID> \
+    -e USER=<FAIROS_USERNAME> \
+    -e PASSWORD=<FAIROS_PASSWORD> \
+    -e POD=<POD_FOR_STORING_DB> \
+    -e VECTORIZER_URL=<API_ENDPOINT_FOR_VECTORIZER> \
+    -p 1234:1234 \
+    fds/fave --port 1234 --host 0.0.0.0 
 
-#### "Is bee node running behind proxy?"
+```
 
-- On most of the cases this should be "No" if you are using a bee node directly or using your own bee.
-- This option should be "Yes" when you are using the [gateway-proxy](https://github.com/ethersphere/gateway-proxy) service
+## How does FaVe work?
 
-#### What is "Bee"?
+FaVe currently supports only test vectorization.
 
-- This should be your bee api endpoint
+The system first produces vector representations or embeddings from a chosen vectorizer. Following that,
+it determines the nearest neighbors based on these embeddings. Once this is done, the content gets uploaded,
+and subsequently, the information about the nearest neighbors is also uploaded.
 
-#### What is "BatchID"?
+When conducting a search for a particular term, it computes the distance from a designated starting point and
+then searches for a match within the precomputed nearest neighbors.
 
-- It is the stamp that will be user to upload your data into the swarm.
+## How to put data in FaVe?
 
-#### What is RPC? Why do we need it?
+FaVe utilizes fairOS internally, meaning it's embedded directly rather than through REST APIs.
+FaVe itself offers a set of REST APIs for various functions.
 
-- An RPC (remote procedure call) endpoint is like a node's address: it's a URL which requests for blockchain data can be sent to.
-- We need this for user authentication for our portable account.
+Before we go any further we need these concepts cleared up:
 
-#### What is "Network"? Why does it have "Testnet" and "Play"? What is "Play"?
+- Collection: This term refers to a namespace that points to a specific fairOS document and key-value store.
+  In user point of view a collection is a place to store documents.
 
-- Choosing this network determines the Ethereum network that will be used for ENS based portable accounts.
-- Currently, we have ENS contracts deployed on Goerli and Sepolia "Testnet" Blockchain. But we will officially support sepolia from now on.
-- We have a small play environment for the whole FDP architecture, called [fdp-play](https://github.com/fairDataSociety/fdp-play). If you want to use fdp-play behind FDA, this option is for you.
+- Documents: These are individual records placed within a collection.
 
-#### What is "Mount Location"?
+- Properties: These represent features of a document that are stored. FaVe vectorizes a set of properties that can be used to for search.
 
-- FDA will create a `Fairdrive` directory in your mount location and mount pods in that directory.
+- Vectorizer: It's worth noting that the vectorizer, responsible for creating vector representations of document properties, is intended to be a separate service from FaVe.
 
-## FAQ
-#### How to mount?
+### How do we perform data upload?
 
-![mount](https://user-images.githubusercontent.com/15252513/206395147-e9961710-0aa7-49b7-8a9b-a864566c9e83.gif)
+FaVe provides a set of REST APIs for creating collections, adding documents, and retrieving nearest documents.
 
-- If you have not saved your bee preferences, Go to Files -> Settings and save
-- Check "Remember Me" option before Login to save your login credentials. (You can also switch between accounts later if you check this option)
-- Login
-- After you log in you should see all you pods, if you do not have one hit "ctrl/cmd + N" to create a new pod
-- Click on the checkbox on the left of your pod name. The pod should mount in your user space
-- Click on the folder icon on the right side of the pod name to open it in your file manager
-- CONGRATULATIONS !! you have successfully mounted your fairdrive pod in your user space
+**Before uploading data as documents, some preprocessing is required.**
 
-#### Which is better, local light node, a full node on raspberry, or gateway?
+Here are the steps:
 
-- Using your own bee is always better for performance. A light node is good enough for using FDA, but a full node will perform better.
+1. Start the vectorizer service.
+2. Launch FaVe with fairOS credentials, the bee endpoint, and a batch.
+3. Prepare the data for uploading.
+4. Create a collection.
+5. Upload the documents into FaVe.
 
-#### Where can I follow if the sync is happening?
+We have to prepare the documents in a specific format before uploading them via REST api
 
-- If you are using the same bee node for accessing your data, then there is no need to wait for sync.
-  Once you create/move/update/delete data from your mount it will reflect everywhere.
+```
+{
+  "name": "collection1",
+  "propertiesToIndex": ["property1"],
+  "documents": [
+    {
+      "id": "721dfcef-5b95-4eeb-99fc-841784a397df",
+      "properties": {
+        "property1": "foo1",
+        "property2": "bar1"
+      }
+    },
+    {
+      "id": "721dfcef-5b95-4eeb-99fc-841784a397dg",
+      "properties": {
+        "property1": "foo2",
+        "property2": "bar2"
+      }
+    }
+  ]
+}
+```
+This is an example of the add documents request body.
 
-#### What is Lite account?
+We have to provide the name of the collection. The propertiesToIndex is an array of properties that we want to index/vectorize in the vector database.
+We are only indexing property1 in this example.
 
-- Lite account exists on local machine only. You can upgrade it to Portable FDS account using mnemonic later. Just enter username/password and new account will be auto-magically created. When logged in see information about it in 'File -> Account details.'
+The documents array contains the documents that we want to upload. Each document has a unique id and properties.
+Properties are the features of the document. They should contain key and value pairs. all the documents should have the same properties.
 
-#### What does `File => Accounts` do?
+Once we have the data in the correct format, we can upload it to FaVe.
 
-- The accounts you use to log in into FDA are saved locally for your ease of use. You can switch users in just one single click.
+## How to search in FaVe?
 
-> **_Note:_**  Accounts only gets added here if you checked `Remember me` before login
+FaVe provides a REST APIs for retrieving nearest documents from a collection, given a query and a maximum distance.
 
-#### I have a `Portable account`. Can I use it alongside `Lite Account` in FDA?
-
-- Yes. If you created your account from the create-account-app, you can log in into id from FDA. FDA internally checks if the user has a portable account. So If you provide
-  credentials of a portable account, you log in into that account. But If your user is not registered with a portable account, FDA creates a `Lite` user account and lets you use Fairdrive
-  anonymously.
-
-#### Can I use `Lite Account` from other FDA installation or a different system?
-
-- Yes. Just go to `File => Account Details` from where you created the lite account. Copy the mnemonic. Then go to `File => Import Account`, where you what to import the account.
-
-#### Still confused about different account types?
-
-So we have this `Portable` account which can be used to log in from any fdp/fairSO-dfs dapps.
-But FDA has a "Special" case where you can create a `Lite` account to store your data without the need of a RPC connection or spending any token for on-boarding.
-
-Lite account can be upgraded to Portable account from our create account app.
-
-#### So basically it's the same account just different data sets?
-
-yes, If you use same the mnemonic to create a portable account your pods and files stay the same as they were in case of lite account.
-
-#### `Lite` accounts are non persistent?
-
-Lite accounts <strong>ARE</strong> persistent in the sense that the pods, files stays on Swarm, but not your user. it currently persists in the current FDA installation.
-
-You can use the mnemonic to access the same account on different FDA installations by importing.
-
-> **_NOTE:_**  `username` and `password` are just placeholders at the moment in case of `Lite` account
-
-[Bugs and issues](https://github.com/fairDataSociety/fairdrive-desktop-app/issues/issues)
-
-[Fair Data Society Discord](https://discord.gg/7qFEtJDghM)
-
-[FairOS-dfs](https://github.com/fairDataSociety/fairOS-dfs)
-
-[FairOS-dfs docs](https://docs.fairos.fairdatasociety.org/docs/)
+The response contains the nearest documents along with their properties and their distances from the query.
