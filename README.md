@@ -260,4 +260,3 @@ The API has standard error responses like 400 (Bad Request), 401 (Unauthorized),
 
 ### Tags
 - `fave`: Everything about your fave.
-
