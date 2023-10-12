@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/fairdatasociety/fairOS-dfs v0.9.7-0.20230914112028-78104356552e
+	github.com/fairdatasociety/fairOS-dfs v0.9.7-0.20231012050302-75bf7d3284da
 	github.com/go-openapi/errors v0.20.3
 	github.com/go-openapi/loads v0.21.1
 	github.com/go-openapi/runtime v0.24.2

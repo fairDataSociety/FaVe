@@ -475,7 +475,7 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 		err = c.api.DocPut(c.sessionId, c.pod, namespacedCollection, data)
 		if err != nil {
-			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error(), doc.Properties)
+			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error())
 			return err
 		}
 		fmt.Println("added document", indexId)
