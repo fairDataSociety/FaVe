@@ -51,7 +51,7 @@ func configureAPI(api *operations.FaveAPI) http.Handler {
 		os.Exit(1)
 	}
 	api.FaveRootHandler = operations.FaveRootHandlerFunc(handler.FaveRootHandler)
-	fmt.Println("Version: ", FaVe.Version)
+	fmt.Println("Version asdasdasd: ", FaVe.Version)
 	api.FaveCreateCollectionHandler = operations.FaveCreateCollectionHandlerFunc(handler.FaveCreateCollectionHandler)
 	api.FaveGetCollectionsHandler = operations.FaveGetCollectionsHandlerFunc(handler.FaveGetCollectionsHandler)
 	api.FaveDeleteCollectionHandler = operations.FaveDeleteCollectionHandlerFunc(handler.FaveDeleteCollectionHandler)

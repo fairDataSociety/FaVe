@@ -27,7 +27,6 @@ func (h *hnsw) KnnSearchByVectorMaxDist(searchVec []float32, dist float32,
 		// similarity are only identical if the vector is normalized
 		searchVec = distancer.Normalize(searchVec)
 	}
-
 	entryPointID := h.entryPointID
 	entryPointDistance, ok, err := h.distBetweenNodeAndVec(entryPointID, searchVec)
 	if err != nil {

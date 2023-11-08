@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/fairDataSociety/FaVe/pkg/document"
 	"github.com/fairDataSociety/FaVe/restapi/operations"
@@ -50,7 +51,9 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 		EnsConfig:          ensConf,
 		SubscriptionConfig: nil,
 		Logger:             logger,
-		FeedTracker:        true,
+		FeedTracker:        false,
+		FeedCacheSize:      1000,
+		FeedCacheTTL:       time.Minute * 60,
 	}
 
 	dfsApi, err := dfs.NewDfsAPI(ctx, dfsOpts)

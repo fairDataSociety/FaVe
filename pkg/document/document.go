@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fairDataSociety/FaVe/pkg/vectorizer/rest"
+	"github.com/pkg/errors"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	h "github.com/fairDataSociety/FaVe/pkg/hnsw"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/distancer"
@@ -184,17 +186,19 @@ func (c *Client) CreateCollection(col *Collection) error {
 	}
 	kvStore := c.podInfo.GetKVStore()
 	err := c.api.DocCreate(c.sessionId, c.pod, namespacedCollection, col.Indexes, true)
-	if err != nil && err != collection.ErrDocumentDBAlreadyPresent && err != collection.ErrDocumentDBAlreadyOpened {
+	fmt.Println("doc create", err)
+	if err != nil && !errors.Is(err, collection.ErrDocumentDBAlreadyPresent) && !errors.Is(err, collection.ErrDocumentDBAlreadyOpened) {
 		return err
 	}
 
 	err = kvStore.CreateKVTable(namespacedCollection, c.podInfo.GetPodPassword(), collection.StringIndex)
-	if err != nil && err != collection.ErrKvTableAlreadyPresent {
+	fmt.Println("kv create", err)
+	if err != nil && !errors.Is(err, collection.ErrKvTableAlreadyPresent) {
 		return err
 	}
 
 	err = c.api.DocOpen(c.sessionId, c.pod, namespacedCollection)
-	if err != nil && err != collection.ErrDocumentDBAlreadyOpened {
+	if err != nil && !errors.Is(err, collection.ErrDocumentDBAlreadyOpened) {
 		return err
 	}
 
@@ -325,10 +329,12 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				return v.([]float32), nil
 			}
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			now := time.Now()
 			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("doc find", time.Since(now).String())
 			if len(docs) == 0 {
 				return nil, fmt.Errorf("document not found")
 			}
@@ -453,7 +459,6 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 				doc.Properties["vector"] = vector.ToArray()
 
 				doc.Properties[hnswIndexName] = indexId
-
 				err = index.Add(indexId, vector.ToArray())
 				if err != nil {
 					c.logger.Errorf("index.Add failed :%s\n", err.Error())
@@ -475,18 +480,28 @@ func (c *Client) AddDocuments(collection string, propertiesToIndex []string, doc
 
 		err = c.api.DocPut(c.sessionId, c.pod, namespacedCollection, data)
 		if err != nil {
-			c.logger.Errorf("DocPut failed :%s, %+v\n", err.Error())
+			c.logger.Errorf("DocPut failed :%v\n", err.Error())
 			return err
 		}
-		fmt.Println("added document", indexId)
+		fmt.Println("added document", indexId, doc.Properties["title"])
 	}
-
-	return index.Flush(indexId)
+	fmt.Println("docs put done")
+	err = index.Flush(indexId)
+	if err != nil {
+		return err
+	}
+	fmt.Println("kv flushed")
+	now := time.Now()
+	err = c.api.CommitPodFeeds(c.pod, c.sessionId)
+	if err != nil {
+		return err
+	}
+	fmt.Println("commit pod feeds", time.Since(now).String())
+	return nil
 }
 
 func (c *Client) GetNearDocuments(collection, text string, distance float32, limit int) ([][]byte, []float32, error) {
 	namespacedCollection := namespace + collection
-
 	kvStore := c.podInfo.GetKVStore()
 	_, err := kvStore.KVCount(namespacedCollection)
 	if err != nil {
@@ -505,10 +520,12 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 				return v.([]float32), nil
 			}
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			now := time.Now()
 			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("doc find ", id, time.Since(now).String())
 			if len(docs) == 0 {
 				return nil, fmt.Errorf("document not found")
 			}
@@ -567,7 +584,7 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 	if err != nil {
 		return nil, nil, err
 	}
-	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 800, nil)
+	ids, dists, err := index.KnnSearchByVectorMaxDist(vector.ToArray(), distance, 8, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -575,10 +592,10 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 		ids = ids[:limit]
 		dists = dists[:limit]
 	}
-
 	documents := make([][]byte, len(ids))
 	wg := sync.WaitGroup{}
 	errCh := make(chan error, len(ids))
+	fmt.Println("ids", ids)
 	for i, id := range ids {
 		wg.Add(1)
 		go func(i int, id uint64) {
@@ -586,6 +603,7 @@ func (c *Client) GetNearDocuments(collection, text string, distance float32, lim
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
 			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
 			if err != nil {
+				fmt.Println("doc find error", err, id, expr, ids)
 				errCh <- err
 				return
 			}
@@ -629,10 +647,12 @@ func (c *Client) GetNearDocumentsByVector(collection string, vector []float32, d
 				return v.([]float32), nil
 			}
 			expr := fmt.Sprintf("%s=%d", hnswIndexName, id)
+			now := time.Now()
 			docs, err := c.api.DocFind(c.sessionId, c.pod, namespacedCollection, expr, 1)
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("doc find", time.Since(now).String())
 			if len(docs) == 0 {
 				return nil, fmt.Errorf("document not found")
 			}

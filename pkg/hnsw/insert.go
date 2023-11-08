@@ -277,18 +277,8 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 
 	h.indexCache.Add(node.Id, node)
 
-	//nodeBytes, err := json.Marshal(node)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshal node %d", node.Id)
-	//}
-	//err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
-	//if err != nil {
-	//	return errors.Wrapf(err, "put node %d", node.Id)
-	//}
-
 	h.insertMetrics.prepareAndInsertNode(before)
 	before = time.Now()
-
 	entryPointID, err = h.findBestEntrypointForNode(currentMaximumLayer, targetLevel,
 		entryPointID, nodeVec)
 	if err != nil {
