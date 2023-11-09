@@ -22,6 +22,7 @@ type vertex struct {
 	Level       int        `json:"level"`
 	Connections [][]uint64 `json:"connections"`
 	Maintenance bool       `json:"maintenance"`
+	Vector      []float32  `json:"vector"`
 	Committed   bool       `json:"-"`
 }
 

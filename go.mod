@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ethersphere/bee v1.17.4
-	github.com/fairdatasociety/fairOS-dfs v0.0.0-00010101000000-000000000000
+	github.com/fairdatasociety/fairOS-dfs v0.10.0-rc2.0.20231109064945-d76543981e92
 	github.com/go-openapi/errors v0.20.4
 	github.com/go-openapi/loads v0.21.1
 	github.com/go-openapi/runtime v0.24.2
@@ -22,8 +22,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/weaviate/weaviate v1.18.6
-	golang.org/x/net v0.14.0
-	golang.org/x/sys v0.12.0
+	golang.org/x/net v0.18.0
+	golang.org/x/sys v0.14.0
 )
 
 require (
@@ -123,12 +123,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.mongodb.org/mongo-driver v1.11.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad // indirect
-	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
-	golang.org/x/tools v0.12.1-0.20230818130535-1517d1a3ba60 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.15.0 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
@@ -142,5 +142,3 @@ require (
 
 // required for latest bee
 replace github.com/codahale/hdrhistogram => github.com/HdrHistogram/hdrhistogram-go v0.0.0-20200919145931-8dac23c8dac1
-
-replace github.com/fairdatasociety/fairOS-dfs => ../fairOS-dfs

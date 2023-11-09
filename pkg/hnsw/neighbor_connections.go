@@ -68,12 +68,6 @@ func (n *neighborFinderConnector) Do() error {
 	n.graph.indexCache.Add(n.node.Id, n.node)
 
 	return nil
-	//nodeBytes, err := json.Marshal(n.node)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshal node %d", n.node.Id)
-	//}
-	//
-	//return n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", n.node.Id), nodeBytes)
 }
 
 func (n *neighborFinderConnector) doAtLevel(level int) error {
@@ -213,14 +207,7 @@ func (n *neighborFinderConnector) connectNeighborAtLevel(neighborID uint64,
 			id := candidates.Pop().ID
 			neighbor.appendConnectionAtLevelNoLock(level, id, maximumConnections)
 			n.graph.indexCache.Add(neighbor.Id, neighbor)
-			//neighborBytes, err := json.Marshal(neighbor)
-			//if err != nil {
-			//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-			//}
-			//err = n.graph.nodes.KVPut(n.graph.className, fmt.Sprintf("%d", neighbor.Id), neighborBytes)
-			//if err != nil {
-			//	return errors.Wrapf(err, "marshal node %d", neighbor.Id)
-			//}
+
 			if err := n.graph.commitLog.AddLinkAtLevel(neighbor.Id, level, id); err != nil {
 				return err
 			}

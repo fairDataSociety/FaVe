@@ -509,9 +509,9 @@ func (h *hnsw) distBetweenNodes(a, b uint64) (float32, bool, error) {
 	return h.distancerProvider.SingleDist(vecA, vecB)
 }
 
-func (h *hnsw) distBetweenNodeAndVec(node uint64, vecB []float32) (float32, bool, error) {
+func (h *hnsw) distBetweenNodeAndVec(nodeId uint64, vecB []float32) (float32, bool, error) {
 	if h.compressed.Load() {
-		v1, err := h.compressedVectorsCache.get(context.Background(), node)
+		v1, err := h.compressedVectorsCache.get(context.Background(), nodeId)
 		if err != nil {
 			var e storobj.ErrNotFound
 			if errors.As(err, &e) {
@@ -520,33 +520,24 @@ func (h *hnsw) distBetweenNodeAndVec(node uint64, vecB []float32) (float32, bool
 			} else {
 				// not a typed error, we can recover from, return with err
 				return 0, false, errors.Wrapf(err,
-					"could not get vector of object at docID %d", node)
+					"could not get vector of object at docID %d", nodeId)
 			}
 		}
 		if len(v1) == 0 {
-			return 0, false, fmt.Errorf("got a nil or zero-length vector at docID %d", node)
+			return 0, false, fmt.Errorf("got a nil or zero-length vector at docID %d", nodeId)
 		}
 
 		return h.pq.DistanceBetweenCompressedAndUncompressedVectors(vecB, v1), true, nil
 	}
-	// TODO: introduce single search/transaction context instead of spawning new
-	// ones
-	vecA, err := h.vectorForID(context.Background(), node)
-	if err != nil {
-		var e storobj.ErrNotFound
-		if errors.As(err, &e) {
-			h.handleDeletedNode(e.DocID)
-			return 0, false, nil
-		} else {
-			// not a typed error, we can recover from, return with err
-			return 0, false, errors.Wrapf(err,
-				"could not get vector of object at docID %d", node)
-		}
+
+	node := h.nodeByID(nodeId)
+	if node == nil {
+		return 0, false, fmt.Errorf("could not get node at docID %d", nodeId)
 	}
 
-	if len(vecA) == 0 {
+	if len(node.Vector) == 0 {
 		return 0, false, fmt.Errorf(
-			"got a nil or zero-length vector at docID %d", node)
+			"got a nil or zero-length vector at docID %d", nodeId)
 	}
 
 	if len(vecB) == 0 {
@@ -554,7 +545,7 @@ func (h *hnsw) distBetweenNodeAndVec(node uint64, vecB []float32) (float32, bool
 			"got a nil or zero-length vector as search vector")
 	}
 
-	return h.distancerProvider.SingleDist(vecA, vecB)
+	return h.distancerProvider.SingleDist(node.Vector, vecB)
 }
 
 func (h *hnsw) Stats() {
@@ -626,6 +617,7 @@ func (h *hnsw) nodeByID(id uint64) *vertex {
 			fmt.Println("nodeByID: could not Unmarshal node", err)
 			return nil
 		}
+		h.indexCache.Add(id, v)
 		return v
 	}
 }

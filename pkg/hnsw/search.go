@@ -17,7 +17,6 @@ import (
 	"math"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/priorityqueue"
 	"github.com/fairDataSociety/FaVe/pkg/hnsw/visited"
@@ -166,15 +165,12 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 	entrypoints *priorityqueue.Queue, ef int, level int,
 	allowList helpers.AllowList) (*priorityqueue.Queue, error,
 ) {
-	now := time.Now()
-	fmt.Println("searchLayerByVector")
 	h.pools.visitedListsLock.Lock()
 	visited := h.pools.visitedLists.Borrow()
 	h.pools.visitedListsLock.Unlock()
 
 	candidates := h.pools.pqCandidates.GetMin(ef)
 	results := h.pools.pqResults.GetMax(ef)
-	fmt.Println("searchLayerByVector 1", time.Since(now))
 	var floatDistancer distancer.Distancer
 	var byteDistancer *ssdhelpers.PQDistancer
 	if h.compressed.Load() {
@@ -185,7 +181,6 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 
 	h.insertViableEntrypointsAsCandidatesAndResults(entrypoints, candidates,
 		results, level, visited, allowList)
-	fmt.Println("searchLayerByVector 2", time.Since(now))
 
 	var worstResultDistance float32
 	var err error
@@ -197,7 +192,6 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 	if err != nil {
 		return nil, errors.Wrapf(err, "calculate distance of current last result")
 	}
-	fmt.Println("searchLayerByVector 3", time.Since(now))
 
 	connectionsReusable := make([]uint64, h.maximumConnectionsLayerZero)
 
@@ -205,10 +199,8 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 		var dist float32
 		candidate := candidates.Pop()
 		dist = candidate.Dist
-		fmt.Println("Looking for candidate", candidate.ID, time.Since(now))
 
 		if dist > worstResultDistance && results.Len() >= ef {
-			fmt.Println("Breaking with candidates", candidates.Len())
 			break
 		}
 		//h.RLock()
@@ -249,7 +241,6 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 
 		copy(connectionsReusable, candidateNode.Connections[level])
 		candidateNode.Unlock()
-		fmt.Println("connections of candidate", candidate.ID, connectionsReusable, time.Since(now))
 
 		nds := []neighbourDistance{}
 		wg := sync.WaitGroup{}
@@ -289,7 +280,6 @@ func (h *hnsw) searchLayerByVector(queryVector []float32,
 		for _, nd := range nds {
 			distance, neighborID := nd.dist, nd.id
 			if distance < worstResultDistance || results.Len() < ef {
-				fmt.Println("Inserting new candidate", neighborID, time.Since(now), candidates.Len())
 				candidates.Insert(neighborID, distance)
 				if level == 0 && allowList != nil {
 					// we are on the lowest level containing the actual candidates and we
@@ -429,18 +419,21 @@ func (h *hnsw) distanceToByteNode(distancer *ssdhelpers.PQDistancer,
 func (h *hnsw) distanceToFloatNode(distancer distancer.Distancer,
 	nodeID uint64,
 ) (float32, bool, error) {
-	candidateVec, err := h.vectorForID(context.Background(), nodeID)
-	if err != nil {
-		var e storobj.ErrNotFound
-		if errors.As(err, &e) {
-			h.handleDeletedNode(e.DocID)
-			return 0, false, nil
-		} else {
-			// not a typed error, we can recover from, return with err
-			return 0, false, errors.Wrapf(err, "get vector of docID %d", nodeID)
-		}
+	node := h.nodeByID(nodeID)
+	if node == nil {
+		return 0, false, fmt.Errorf("get vector of ID %d failed\n", nodeID)
 	}
 
+	dist, _, err := distancer.Distance(node.Vector)
+	if err != nil {
+		return 0, false, errors.Wrap(err, "calculate distance between candidate and query")
+	}
+	return dist, true, nil
+}
+
+func (h *hnsw) distanceToFloatVector(distancer distancer.Distancer,
+	candidateVec []float32,
+) (float32, bool, error) {
 	dist, _, err := distancer.Distance(candidateVec)
 	if err != nil {
 		return 0, false, errors.Wrap(err, "calculate distance between candidate and query")
