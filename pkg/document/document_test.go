@@ -93,7 +93,6 @@ func TestFave(t *testing.T) {
 		PreventRedirect: true,
 		Post:            mockpost.New(mockpost.WithAcceptAll()),
 	})
-	fmt.Println(beeUrl)
 	logger := logging.New(io.Discard, logrus.DebugLevel)
 	mockClient := bee.NewBeeClient(beeUrl, mock.BatchOkStr, true, logger)
 	ens := mock2.NewMockNamespaceManager()
