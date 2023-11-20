@@ -65,7 +65,7 @@ func TestHnsw(t *testing.T) {
 		VectorForIDThunk:      testVectorForID,
 		ClassName:             tableName,
 	}, UserConfig{
-		MaxConnections: 30,
+		MaxConnections: 10,
 		EFConstruction: 60,
 	}, kvStore)
 

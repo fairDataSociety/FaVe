@@ -32,7 +32,6 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 			return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong index type"))
 		}
 	}
-
 	col := &document.Collection{
 		Name:    collectionRaw.Name,
 		Indexes: indexes,

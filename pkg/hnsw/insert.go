@@ -90,6 +90,7 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 	node.Connections = [][]uint64{
 		make([]uint64, 0, h.maximumConnectionsLayerZero),
 	}
+	node.Vector = nodeVec
 	node.Level = 0
 	if err := h.commitLog.AddNode(node); err != nil {
 		return err
@@ -102,14 +103,6 @@ func (h *hnsw) insertInitialElement(node *vertex, nodeVec []float32) error {
 
 	h.indexCache.Add(node.Id, node)
 
-	//nodeBytes, err := json.Marshal(node)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshal node %d", node.Id)
-	//}
-	//err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
-	//if err != nil {
-	//	return errors.Wrapf(err, "put node %d", node.Id)
-	//}
 	if h.compressed.Load() {
 		compressed := h.pq.Encode(nodeVec)
 		h.storeCompressedVector(node.Id, compressed)
@@ -239,7 +232,7 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 	// m.addBuildingItemLocking(before)
 	node.Level = targetLevel
 	node.Connections = make([][]uint64, targetLevel+1)
-
+	node.Vector = nodeVec
 	for i := targetLevel; i >= 0; i-- {
 		capacity := h.maximumConnections
 		if i == 0 {
@@ -277,18 +270,8 @@ func (h *hnsw) insert(node *vertex, nodeVec []float32) error {
 
 	h.indexCache.Add(node.Id, node)
 
-	//nodeBytes, err := json.Marshal(node)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshal node %d", node.Id)
-	//}
-	//err = h.nodes.KVPut(h.className, fmt.Sprintf("%d", node.Id), nodeBytes)
-	//if err != nil {
-	//	return errors.Wrapf(err, "put node %d", node.Id)
-	//}
-
 	h.insertMetrics.prepareAndInsertNode(before)
 	before = time.Now()
-
 	entryPointID, err = h.findBestEntrypointForNode(currentMaximumLayer, targetLevel,
 		entryPointID, nodeVec)
 	if err != nil {
