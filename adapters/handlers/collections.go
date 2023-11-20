@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/fairDataSociety/FaVe/models"
 	"github.com/fairDataSociety/FaVe/pkg/document"
 	"github.com/fairDataSociety/FaVe/restapi/operations"
@@ -10,16 +9,13 @@ import (
 )
 
 func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateCollectionParams) middleware.Responder {
-	fmt.Println("FaveCreateCollectionHandler", 1)
 	collectionRaw := request.Body
 	if collectionRaw.Name == "" {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection name cannot be blank"))
 	}
-	fmt.Println("FaveCreateCollectionHandler", 2)
 	if collectionRaw.Indexes == nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Collection should have at least one index"))
 	}
-	fmt.Println("FaveCreateCollectionHandler", 3)
 	indexes := make(map[string]collection.IndexType)
 	for _, v := range collectionRaw.Indexes {
 		switch v.FieldType {
@@ -36,17 +32,14 @@ func (s *Handler) FaveCreateCollectionHandler(request operations.FaveCreateColle
 			return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Wrong index type"))
 		}
 	}
-	fmt.Println("FaveCreateCollectionHandler", 4)
 	col := &document.Collection{
 		Name:    collectionRaw.Name,
 		Indexes: indexes,
 	}
 	err := s.doc.CreateCollection(col)
-	fmt.Println("FaveCreateCollectionHandler", 4.1, err)
 	if err != nil {
 		return operations.NewFaveCreateCollectionBadRequest().WithPayload(createErrorResponseObject("Failed to create collection"))
 	}
-	fmt.Println("FaveCreateCollectionHandler", 5)
 	// TODO: return success string
 	return operations.NewFaveCreateCollectionOK().WithPayload(createOKResponseObject("Collection created"))
 }
