@@ -51,8 +51,7 @@ func NewHandler(ctx context.Context, config *HandlerConfig) (*Handler, error) {
 		EnsConfig:          ensConf,
 		SubscriptionConfig: nil,
 		Logger:             logger,
-		FeedTracker:        false,
-		FeedCacheSize:      1000,
+		FeedCacheSize:      10000,
 		FeedCacheTTL:       time.Minute * 60,
 	}
 
